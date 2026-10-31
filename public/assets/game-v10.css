@@ -487,9 +487,9 @@ img{-webkit-user-drag:none}
 #result{justify-content:flex-start}
 .rpanel{position:relative;width:min(560px,94vw);container-type:inline-size;margin-top:4px;filter:drop-shadow(0 16px 26px rgba(12,40,110,.28))}
 .rhdr{display:block;width:100%;height:auto;position:relative;z-index:2;pointer-events:none}
-.rx{position:absolute;left:87.34cqw;top:28.34cqw;width:11.23cqw;height:11.23cqw;border-radius:50%;z-index:4;padding:0}
-.rx img{width:100%;height:100%;display:block}
-.rx:active{transform:scale(.94)}
+#rx{position:absolute;left:87.34cqw;top:28.34cqw;width:11.23cqw;height:11.23cqw;border-radius:50%;z-index:4;padding:0}
+#rx img{width:100%;height:100%;display:block}
+#rx:active{transform:scale(.94)}
 .rbody{position:relative;z-index:1;margin:-.4cqw 1.96cqw 0;padding:1.5cqw 4.4cqw 4.6cqw;background:linear-gradient(#ffffff,#f6f9fe);
   border:1.75cqw solid #109bfd;border-top:0;border-radius:0 0 6.4cqw 6.4cqw;
   box-shadow:inset 1.4cqw 0 1.6cqw -0.8cqw #d9eafb,inset -1.4cqw 0 1.6cqw -0.8cqw #d9eafb,inset 0 -1.4cqw 1.6cqw -0.8cqw #d9eafb,0 0 0 .35cqw #0060e8}
@@ -536,3 +536,98 @@ img{-webkit-user-drag:none}
 .ranktop .rkt{width:min(380px,74%);margin:0 auto 8px}
 .rkdots{text-align:center;color:#8a9bb8;font:900 22px/1 var(--ui);margin:-2px 0}
 .rkrule2{margin-top:10px;text-align:center;font:600 13px var(--ui);color:var(--sub)}
+
+/* ── 16차: 어떤 화면이든 스크롤 없이 한 화면에 ──
+   화면이 작으면 JS(fitAll)가 화면 전체를 비율 그대로 줄여서 맞춰요. */
+.screen,.modal{transform-origin:0 0}
+.mpanel{max-height:100%}
+/* 게임: 내 카드 칸 높이를 고정하고 카드 크기를 칸에 맞춰요 */
+.bottom{height:34%;max-height:none}
+.mine{display:flex;flex-direction:column}
+.hand{flex:1;min-height:0;overflow:hidden;justify-content:center;padding-top:14px}
+.books{display:flex;flex-direction:column}
+.mybooks{flex:1;min-height:0;overflow:hidden;justify-content:center;align-content:start}
+@media (max-width:600px){ .bottom{height:38%} .mybooks{flex:1;overflow:hidden} }
+/* 대기실: 카드 공부 칸이 남은 공간을 채우고 카드 크기가 맞춰져요 */
+#lobby{padding-bottom:14px}
+.lobwrap{flex:1 1 auto;min-height:0;gap:12px}
+.study{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+.study .phead{margin-bottom:6px}
+.sgrid{flex:1 1 0;min-height:0;overflow:hidden;justify-content:center;align-content:center;margin-top:8px}
+.studyline{flex-shrink:0;margin-top:8px}
+.ptiles.many{gap:8px}
+.ptiles.many .ptile{width:92px;padding:8px 4px 6px;gap:3px;border-radius:14px}
+.ptiles.many .ptile .pawn{height:40px}
+.ptiles.many .ptile .pno,.ptiles.many .ptile .ready{display:none}
+.ptiles.many .ptile .nm{font-size:13px;padding:3px 4px}
+.ptiles.many .ptile .crown{width:30px;top:-14px;left:4px}
+/* 태블릿·크롬북 이상: 왼쪽 [대기 정보 + 우리반 랭킹] | 오른쪽 크게 [기다리는 동안 카드 공부] */
+@media (min-width:700px),(orientation:landscape) and (min-width:560px){
+  .lobwrap{width:min(1500px,100%);display:grid;grid-template-columns:minmax(0,40fr) minmax(0,60fr);
+    grid-template-rows:auto auto auto auto auto auto minmax(0,1fr);column-gap:18px;row-gap:10px;justify-items:center;align-items:start}
+  .lobwrap>.backbtn{grid-area:1/1;justify-self:start}
+  .lobwrap>.t3d{grid-area:1/1/2/3}
+  .lobwrap>.infobar{grid-area:2/1}
+  .lobwrap>.ptiles{grid-area:3/1}
+  .lobwrap>#lstatus{grid-area:4/1;width:100%}
+  .lobwrap>.lsub{grid-area:5/1}
+  .lobwrap>.stats{grid-area:6/1}
+  .lobwrap>.ranktop{grid-area:7/1;align-self:start;max-width:420px}
+  .lobwrap>.infobar,.lobwrap>.stats{max-width:100%}
+  .ranktop .rkt{width:min(300px,70%)}
+  .ptiles{gap:8px}
+  .lobwrap>.study{grid-area:2/2/8/3;align-self:stretch;height:auto;padding:18px 22px;border:4px solid #fff;box-shadow:0 0 0 3px #9cc8ff,var(--shadow)}
+  /* 카드 공부 칸을 크게 */
+  .study .phead{margin-bottom:10px}
+  .study .phead img{width:40px}
+  .study .phead b{font-size:24px}
+  .study .phead small{font-size:15px}
+  .study .tab{padding:10px 26px;font-size:18px}
+  .study .sgrid{column-gap:16px;margin-top:12px}
+  .study .studyline{min-height:84px;padding:14px 18px;font-size:17px;justify-content:center}
+  .study .studyline .en{font-size:28px}
+  .study .studyline .ans{font-size:19px}
+}
+@media (min-width:700px) and (orientation:landscape) and (max-height:860px){ .lobwrap>.lsub{display:none} .ptiles .ptile{width:92px;padding:8px 4px 6px;gap:3px} .ptiles .ptile .pawn{height:40px} .ptiles .ptile .pno,.ptiles .ptile .ready{display:none} .ptiles .ptile .nm{font-size:13px} .ptiles .ptile{width:80px} .stat{min-width:70px;padding:5px 10px} .stat b{font-size:19px} }
+/* 넓은 가로 화면: [대기 정보 | 우리반 랭킹 | 카드 공부(가장 크게)] */
+@media (min-width:1000px) and (min-aspect-ratio:4/3){
+  .lobwrap{width:min(1600px,100%);grid-template-columns:minmax(200px,270px) minmax(240px,340px) minmax(0,1fr);column-gap:14px}
+  .lobwrap>.infobar{padding:8px 12px;gap:10px}.lobwrap .ib-code{padding:4px 12px}.lobwrap .ib-people img{width:36px}
+  .lobwrap>.t3d{grid-area:1/1/2/4}
+  .lobwrap>.ranktop{grid-area:2/2/8/3;max-width:none;width:100%}
+  .lobwrap>.study{grid-area:2/3/8/4}
+}
+/* 작은 휴대폰 대기실: 덜 중요한 것은 줄여서 글씨가 너무 작아지지 않게 */
+@media (max-width:600px){
+  #lobby{padding:10px 10px 10px}
+  .lobwrap{gap:8px}
+  #lobby .t3d{font-size:34px}
+  .infobar{padding:6px 12px}
+  .ib-code b,.ib-people b{font-size:22px}.ib-people img{width:32px}
+  #lstatus{font-size:17px;padding:12px 16px}
+  .stats .stat:nth-child(n+4){display:none}
+  .stat{padding:5px 10px;min-width:70px}.stat b{font-size:19px}
+  .ranktop{padding:8px 10px 10px!important}
+  .ranktop .rkt{width:min(260px,60%);margin-bottom:4px}
+  .ranktop .rbars{width:92%;margin:0 auto;gap:5px}
+  .rkrule2{display:none}
+  .study{padding:10px 12px}
+  .study .phead small{display:none}
+  .study .tab{padding:6px 16px;font-size:14px}
+  .ptiles:not(.many) .ptile{width:104px;padding:8px 6px}
+  .ptiles:not(.many) .ptile .pawn{height:46px}
+}
+@media (orientation:landscape) and (max-height:500px){
+  .stats,.rkrule2,.lsub{display:none!important}
+}
+.ptile.more{justify-content:center}
+.ptile.more b{font:900 26px var(--ui);color:var(--blue2)}
+
+/* 휴대폰: 랭킹은 1~3위와 내 순위만 */
+@media (max-width:699px){
+  .ranktop .rbars>.rbar:nth-child(4):not(.me),.ranktop .rbars>.rbar:nth-child(5):not(.me){display:none}
+}
+
+.ib-people small{white-space:nowrap}
+.study .phead{flex-wrap:wrap;row-gap:2px}
+.study .phead b{white-space:nowrap}

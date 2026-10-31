@@ -297,6 +297,7 @@ function render(v) {
   else if (v.screen === 'intro') renderIntro(v);
   else if (v.screen === 'game') renderGame(v);
   else if (v.screen === 'result') renderResult(v);
+  fitSoon();
 }
 
 // ───── 대기실 ─────
@@ -316,9 +317,11 @@ function renderLobby(v) {
   const L = v.lobby, m = LMSG[L.msg] || LMSG.few;
   $('#lcode').textContent = v.code;
   $('#lcount').textContent = L.names.length;
-  $('#ltiles').innerHTML = L.names.map((n, i) => `<div class="ptile ${n === v.me.name ? 'me' : ''}">
+  const MAXT = 10, names = [v.me.name, ...L.names.filter(n => n !== v.me.name)].filter(n => L.names.includes(n));
+  const shownN = names.length > MAXT ? names.slice(0, MAXT - 1) : names;
+  $('#ltiles').innerHTML = shownN.map((n, i) => `<div class="ptile ${n === v.me.name ? 'me' : ''}">
     ${n === v.me.name ? `<img class="crown" src="${UI}crown.png" alt="">` : ''}${pawn('', n)}
-    <div class="pno">${n === v.me.name ? '나' : 'Player ' + (i + 1)}</div><div class="nm">${esc(n)}</div><div class="ready">준비완료</div></div>`).join('');
+    <div class="pno">${n === v.me.name ? '나' : 'Player ' + (i + 1)}</div><div class="nm">${esc(n)}</div><div class="ready">준비완료</div></div>`).join('') + (names.length > shownN.length ? `<div class="ptile more"><b>+${names.length - shownN.length}</b><div class="nm">명 더</div></div>` : '');
   $('#lstatus').innerHTML = `<span class="dots">${m[0]}</span>`;
   let sub = m[1];
   if (L.small && L.prevNum) sub = '반 인원이 적어서 같은 친구들과 다시 만날 수 있어요';
@@ -338,6 +341,7 @@ function renderStudy(unit) {
     const c = CARDS[el.dataset.set]; speak(c.ask); SFX.pop();
     $('#sline').innerHTML = `<b class="en">${esc(c.ask)}</b><span>${esc(c.askKo)}</span><span class="ans">→ ${esc(c.yes)} / ${esc(c.no)}</span>`;
   });
+  fitSoon();
 }
 
 // ───── 새 모둠 ─────
@@ -458,6 +462,7 @@ function renderReq() {
   $('#reqcards').innerHTML = list.map(h => cardHTML(h.set, { tap: true, n: h.n, sel: h.set === req.set })).join('');
   $('#reqcards').querySelectorAll('.card').forEach(el => el.onclick = () => { req.set = el.dataset.set; sel.set = req.set; SFX.pop(); renderReq(); });
   $('#reqgo').disabled = !req.set;
+  fitSoon();
 }
 $('#reqx').onclick = () => { closeReq(); sel.target = null; };
 $('#reqgo').onclick = () => {
@@ -637,6 +642,79 @@ function renderResult(v) {
   $('#rmsg').innerHTML = `<span data-left="${R.resultEnds}"></span>초 뒤 대기실로 가서 <b>새 모둠</b>을 만나요!`;
   tick();
 }
+
+// ───── 한 화면 맞춤: 어떤 기기든 스크롤 없이 다 보이게 ─────
+// 화면이 모자라면 화면 전체를 비율 그대로 살짝 줄이고, 카드 칸은 칸 크기에 맞춰 카드 크기를 정해요.
+function stage(el, z) {
+  if (z >= 0.999) {
+    if (el.dataset.z && el.dataset.z !== '1') { el.style.width = el.style.height = el.style.transform = el.style.right = el.style.bottom = ''; }
+    el.dataset.z = '1'; return;
+  }
+  el.style.right = el.style.bottom = 'auto';
+  el.style.width = (innerWidth / z) + 'px'; el.style.height = (innerHeight / z) + 'px';
+  el.style.transform = `scale(${z})`; el.dataset.z = String(z);
+}
+function fitGrid(el, n, maxW, ratio = 1.43, extra = 10) {
+  if (!el) return 999;
+  if (!n) { el.style.gridTemplateColumns = ''; return 999; }
+  const cs = getComputedStyle(el);
+  const W = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const H = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const gx = parseFloat(cs.columnGap) || 10, gy = parseFloat(cs.rowGap) || 10;
+  let best = 0, bc = 1;
+  for (let c = 1; c <= n; c++) {
+    const r = Math.ceil(n / c);
+    const w = Math.min(maxW, (W - (c - 1) * gx) / c, ((H - (r - 1) * gy) / r - extra) / ratio);
+    if (w > best + 0.5) { best = w; bc = c; }
+  }
+  best = Math.max(20, Math.floor(best));
+  el.style.gridTemplateColumns = `repeat(${bc}, ${best}px)`;
+  return best;
+}
+const fitsBox = el => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1;
+const FIT = {
+  def: fitsBox,
+  lobby(el) {
+    $('#ltiles').classList.toggle('many', $('#ltiles').children.length > 4);
+    const cw = fitGrid($('#sgrid'), $('#sgrid').children.length, innerWidth >= 700 ? 190 : 116);
+    return fitsBox(el) && cw >= (innerWidth <= 600 || innerHeight < 500 ? 44 : 84);
+  },
+  game(el) {
+    const hand = $('#hand'), n = hand.querySelectorAll('.card').length;
+    const cw = fitGrid(hand, n, innerWidth > 600 ? 128 : 104);
+    const mb = $('#mybooks');
+    if (getComputedStyle(mb).display === 'grid') fitGrid(mb, mb.children.length, 70, 1.43, 4);
+    else mb.style.gridTemplateColumns = '';
+    const hb = el.querySelector('.hudbar'), tb = $('#table').getBoundingClientRect();
+    const seatsIn = [...document.querySelectorAll('#seats .seat')].every(s => { const r = s.getBoundingClientRect(); return r.left >= tb.left - 4 && r.right <= tb.right + 4; });
+    return fitsBox(el) && hb.scrollWidth <= hb.clientWidth + 1 && seatsIn && (n === 0 || cw >= 54);
+  },
+  modal(el) {
+    const p = el.querySelector('.mpanel, .bfpanel'), b = el.querySelector('.mbody');
+    if (p && p.classList.contains('bfpanel')) { const r = p.getBoundingClientRect(), z = Number(el.dataset.z || 1); return r.top - 40 * z >= 0 && r.bottom <= innerHeight && r.width <= innerWidth; }
+    return fitsBox(el) && (!p || p.scrollHeight <= p.clientHeight + 1) && (!b || fitsBox(b));
+  },
+};
+function fitEl(el, pred) {
+  stage(el, 1); if (pred(el)) return;
+  let lo = 0.3, hi = 1;
+  for (let i = 0; i < 8; i++) { const mid = (lo + hi) / 2; stage(el, mid); if (pred(el)) lo = mid; else hi = mid; }
+  stage(el, lo); pred(el);
+}
+function fitAll() {
+  const s = document.querySelector('.screen.on');
+  if (s) fitEl(s, FIT[s.id] || FIT.def);
+  document.querySelectorAll('.modal.on, .bookfx').forEach(m => fitEl(m, FIT.modal));
+}
+let fitQ = 0;
+function fitSoon() { if (fitQ) return; fitQ = requestAnimationFrame(() => { fitQ = 0; fitAll(); }); }
+window.addEventListener('resize', fitSoon);
+window.addEventListener('orientationchange', () => setTimeout(fitSoon, 300));
+document.addEventListener('load', e => { if (e.target.tagName === 'IMG') fitSoon(); }, true);
+if (document.fonts) document.fonts.ready.then(fitSoon);
+new MutationObserver(fitSoon).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+new MutationObserver(fitSoon).observe(document.body, { childList: true });
+fitSoon();
 
 // ───── 시계 ─────
 function tick() {
