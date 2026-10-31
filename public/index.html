@@ -195,7 +195,7 @@ const UI = '/assets/v10/ui/';
 
 let CARDS = {}, IMAGES = {}, V = null, offset = 0, lastKey = '', lastSeq = 0, curRoom = null;
 let sel = { set: null, target: null }, sound = LS.get('sound', true), studyUnit = null, asking = false;
-let req = { open: false, target: null, set: null, tab: 'all' };
+let req = { open: false, target: null, set: null, tab: 'all' }, resultSeen = '';
 
 fetch('/api/cards').then(r => r.json()).then(d => { CARDS = d.cards; IMAGES = d.images || {}; lastKey = ''; if (V) render(V); });
 
@@ -209,7 +209,36 @@ function tone(freqs, dur = .12, type = 'sine', vol = .12) {
     for (const f of freqs) { const o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur); o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur); t += dur * .8; }
   } catch (e) {}
 }
-const SFX = { turn: () => tone([660, 880]), give: () => tone([523, 659, 784]), fish: () => tone([300, 220], .18, 'triangle'), book: () => tone([523, 659, 784, 1046], .16, 'square', .08), bad: () => tone([220, 180], .2, 'sawtooth', .06), pop: () => tone([900], .06) };
+// 효과음 파일(public/sfx) — 처음 화면을 누를 때 소리를 깨워서 불러와요
+const SFX_FILES = { click: '01_button_click', confirm: '02_button_confirm', back: '03_button_back', select: '04_card_select', deselect: '05_card_deselect',
+  draw: '06_card_draw', shuffle: '07_card_shuffle', transfer: '08_card_transfer', gofish: '09_go_fish', correct: '10_correct', incorrect: '11_incorrect',
+  book: '12_book_complete', myturn: '13_my_turn', turnchange: '14_turn_change', warning: '15_timer_warning', timeup: '16_time_up', rank: '17_rank_reveal',
+  first: '18_first_place', join: '19_lobby_join', match: '20_match_found', tick: '21_countdown_tick', start: '22_game_start', end: '23_game_end',
+  open: '24_popup_open', close: '25_popup_close' };
+const SFX_BUF = {}, SFX_RAW = {}, SFX_LAST = {};
+let sfxLoading = false;
+function sfxLoad() {
+  if (sfxLoading) return; sfxLoading = true;
+  for (const [k, f] of Object.entries(SFX_FILES)) fetch('/sfx/' + f + '.wav').then(r => r.arrayBuffer()).then(b => { SFX_RAW[k] = b; sfxDecode(k); }).catch(() => {});
+}
+function sfxDecode(k) {
+  if (!AC || !SFX_RAW[k] || SFX_BUF[k]) return;
+  const raw = SFX_RAW[k]; SFX_RAW[k] = null;
+  try { AC.decodeAudioData(raw, b => { SFX_BUF[k] = b; }, () => {}); } catch (e) {}
+}
+function audioWake() {
+  try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) {}
+  sfxLoad(); for (const k in SFX_RAW) sfxDecode(k);
+}
+['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, audioWake, { capture: true, passive: true }));
+sfxLoad();
+// play('이름', 크기 0~1, 몇 초 뒤)
+function play(k, vol = .55, delay = 0) {
+  if (!sound || !AC || !SFX_BUF[k]) return;
+  const now = performance.now(); if (!delay && SFX_LAST[k] && now - SFX_LAST[k] < 90) return; SFX_LAST[k] = now;
+  try { const src = AC.createBufferSource(), g = AC.createGain(); src.buffer = SFX_BUF[k]; g.gain.value = vol; src.connect(g); g.connect(AC.destination); src.start(AC.currentTime + delay); } catch (e) {}
+}
+const SFX = { pop: () => play('select', .45) };
 let voice = null;
 function pickVoice() { const vs = speechSynthesis.getVoices().filter(v => /^en(-|_)/i.test(v.lang)); voice = vs.find(v => /US/i.test(v.lang) && /Google|Samantha|Jenny|Aria|Natural/i.test(v.name)) || vs.find(v => /US/i.test(v.lang)) || vs[0] || null; }
 if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
@@ -257,7 +286,7 @@ function join(auto = false) {
     if (res.error) { $('#jerr').textContent = res.error; show('join'); return; }
     LS.set('code', code); LS.set('name', res.name); LS.set('token:' + res.code, res.token);
     $('#jerr').textContent = '';
-    try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    audioWake();
   });
 }
 $('#jgo').onclick = () => join();
@@ -273,6 +302,11 @@ socket.on('view', v => { offset = v.serverNow - Date.now(); V = v; render(v); })
 function show(id) {
   const was = document.querySelector('.screen.on');
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+  if (was && was.id !== id) {
+    if (id === 'lobby') play('join', .5);
+    else if (id === 'intro') play('match', .55);
+    else if (id === 'game' && was.id === 'intro') { play('shuffle', .45); play('start', .55, .5); }
+  }
   if (id !== 'game') { closeModals(); if (was && was.id !== id) document.querySelectorAll('.toast,.bpop,.bookfx').forEach(e => e.remove()); }
 }
 function closeModals() { ['#msay', '#mreply', '#mreq'].forEach(m => $(m).classList.remove('on')); req.open = false; }
@@ -348,7 +382,7 @@ function renderStudy(unit) {
 function renderIntro(v) {
   show('intro');
   const R = v.room;
-  if (curRoom !== R.num) { curRoom = R.num; lastSeq = 0; sel = { set: null, target: null }; tone([523, 659, 784, 1046], .12); }
+  if (curRoom !== R.num) { curRoom = R.num; lastSeq = 0; sel = { set: null, target: null }; }
   const u = R.unit === '11' ? '11단원' : R.unit === '12' ? '12단원' : '11+12';
   $('#inum').textContent = `${R.num}번 모둠 · ${u}`;
   $('#imem').innerHTML = R.players.map((p, i) => `<div class="itile ${p.pid === v.me.pid ? 'me' : ''}" style="animation-delay:${i * .08}s">
@@ -385,7 +419,8 @@ function renderGame(v) {
   // 내 카드
   $('#hand').innerHTML = v.hand.length ? v.hand.map(h => cardHTML(h.set, { n: h.n, tap: myTurn, sel: sel.set === h.set })).join('') : '<div class="empty">손에 카드가 없어요. 차례가 오면 연못에서 1장 가져와요.</div>';
   if (myTurn) $('#hand').querySelectorAll('.card').forEach(el => el.onclick = () => {
-    sel.set = el.dataset.set; SFX.pop();
+    if (sel.set === el.dataset.set && targets.length !== 1) { sel.set = null; play('deselect', .45); lastKey = ''; render(V); return; }
+    sel.set = el.dataset.set; play('select', .5);
     if (targets.length === 1) openReq(targets[0]); else { lastKey = ''; render(V); }
   });
 
@@ -410,7 +445,7 @@ function renderGame(v) {
     $('#sayopts').innerHTML = v.say.options.map((o, i) => `<button class="opt" data-i="${i}"><i class="radio"></i><span>${esc(o)}</span></button>`).join('');
     $('#sayopts').querySelectorAll('.opt').forEach(b => b.onclick = () => {
       if ($('#sayopts').dataset.busy) return; $('#sayopts').dataset.busy = 1;
-      b.classList.add('on'); SFX.pop();
+      b.classList.add('on'); play('confirm', .5);
       setTimeout(() => { socket.emit('say', { idx: Number(b.dataset.i) }); $('#msay').classList.remove('on'); delete $('#sayopts').dataset.busy; asking = false; }, 260);
     });
     $('#saybar').dataset.ends = R.phaseEnds; $('#saybar').dataset.total = 40;
@@ -426,7 +461,7 @@ function renderGame(v) {
     $('#repcard').innerHTML = cardHTML(v.reply.set) + `<span class="utag u${c.unit}">Unit ${c.unit}</span>`;
     $('#repopts').innerHTML = v.reply.options.map((o, i) => `<button class="opt ${i === 0 ? 'yes' : 'no'}" data-i="${i}"><i class="radio"></i><span>${esc(o)}</span></button>`).join('');
     $('#repopts').querySelectorAll('.opt').forEach(b => b.onclick = () => {
-      if ($('#repopts').dataset.busy) return; $('#repopts').dataset.busy = 1; b.classList.add('on');
+      if ($('#repopts').dataset.busy) return; $('#repopts').dataset.busy = 1; b.classList.add('on'); play('confirm', .5);
       setTimeout(() => { socket.emit('reply', { choice: Number(b.dataset.i) }); $('#mreply').classList.remove('on'); delete $('#repopts').dataset.busy; }, 220);
     });
     $('#repbar').dataset.ends = v.reply.ends; $('#repbar').dataset.total = 15;
@@ -445,7 +480,7 @@ function openReq(target) {
   const R = V.room;
   if (!(R.turn === V.me.pid && R.phase === 'ask')) return;
   req = { open: true, target, set: sel.set || (V.hand[0] && V.hand[0].set) || null, tab: 'all' };
-  sel.target = target; SFX.pop();
+  sel.target = target;
   renderReq(); $('#mreq').classList.add('on');
 }
 function closeReq() { req.open = false; $('#mreq').classList.remove('on'); }
@@ -460,7 +495,7 @@ function renderReq() {
   $('#reqtabs').querySelectorAll('.tab').forEach(b => b.onclick = () => { req.tab = b.dataset.k; renderReq(); });
   const list = V.hand.filter(h => req.tab === 'all' || String(CARDS[h.set]?.unit) === req.tab);
   $('#reqcards').innerHTML = list.map(h => cardHTML(h.set, { tap: true, n: h.n, sel: h.set === req.set })).join('');
-  $('#reqcards').querySelectorAll('.card').forEach(el => el.onclick = () => { req.set = el.dataset.set; sel.set = req.set; SFX.pop(); renderReq(); });
+  $('#reqcards').querySelectorAll('.card').forEach(el => el.onclick = () => { req.set = el.dataset.set; sel.set = req.set; play('select', .5); renderReq(); });
   $('#reqgo').disabled = !req.set;
   fitSoon();
 }
@@ -564,14 +599,18 @@ function effect(e, v) {
   const me = v.me.pid;
   const R = v.room, P = pid => R.players.find(p => p.pid === pid) || { name: '?' };
   switch (e.t) {
-    case 'turn': if (e.who === me) { SFX.turn(); bannerPop('turn', '내 차례!'); } break;
-    case 'ask': if (e.who === me) bannerPop('ok', '정답! +' + v.scoreRules.ask + '점', esc(e.text)); if (e.who === me || e.to === me) speak(e.text); else SFX.pop(); break;
-    case 'reply': if (e.to === me || e.who === me) setTimeout(() => speak(e.text), 200); if (e.who === me && !e.ok && !e.auto) { SFX.bad(); toast(`바른 대답은<br><b>${esc(e.text)}</b>`); } break;
-    case 'give': fly(e.who, e.to, e.n); if (e.to === me) { SFX.give(); bannerPop('give', '카드 받았어요!', `<b>${esc(cname(e.set))}</b> ${e.n}장 · 한 번 더!`); } else if (e.who === me) toast(`<b>${esc(cname(e.set))}</b> ${e.n}장을 줬어요`); break;
-    case 'fish': { const w = $('#center'); w.classList.remove('splash'); void w.offsetWidth; w.classList.add('splash'); if (!e.empty) fly('center', e.who, 1); }
-      if (e.who === me) { SFX.fish(); if (e.empty) toast('연못이 비었어요'); else if (e.lucky) bannerPop('fish', 'GO GO FISH!', `원하던 <b>${esc(cname(e.set))}</b>! 한 번 더!`); else bannerPop('fish', 'GO GO FISH!', `<b>${esc(cname(e.got) || '')}</b> 카드를 낚았어요`); } break;
-    case 'wrong': if (e.who === me) { SFX.bad(); bannerPop('no', '오답!', `정답 문장: <b>${esc(e.correct)}</b>`); speak(e.correct); } break;
-    case 'book': SFX.book(); if (e.who === me) bookFx(e.set); else toast(`${esc(P(e.who).name)}: <b>${esc(cname(e.set))}</b> 책 완성!`); break;
+    case 'turn': if (e.who === me) { play('myturn', .6); bannerPop('turn', '내 차례!'); } else play('turnchange', .3); break;
+    case 'ask': if (e.who === me) { play('correct', .55); bannerPop('ok', '정답! +' + v.scoreRules.ask + '점', esc(e.text)); } if (e.who === me || e.to === me) setTimeout(() => speak(e.text), e.who === me ? 450 : 0); break;
+    case 'reply': {
+      const no = /go fish/i.test(e.text || '');
+      if (e.who === me && !e.ok && !e.auto) { play('incorrect', .55); toast(`바른 대답은<br><b>${esc(e.text)}</b>`); }
+      else if (no && (e.to === me || e.who === me)) play('gofish', .55);
+      if (e.to === me || e.who === me) setTimeout(() => speak(e.text), 350); break; }
+    case 'give': fly(e.who, e.to, e.n); play('transfer', e.to === me || e.who === me ? .55 : .3); if (e.to === me) { bannerPop('give', '카드 받았어요!', `<b>${esc(cname(e.set))}</b> ${e.n}장 · 한 번 더!`); } else if (e.who === me) toast(`<b>${esc(cname(e.set))}</b> ${e.n}장을 줬어요`); break;
+    case 'fish': { const w = $('#center'); w.classList.remove('splash'); void w.offsetWidth; w.classList.add('splash'); if (!e.empty) fly('center', e.who, 1); play('draw', e.who === me ? .6 : .3, e.who === me ? .35 : 0); }
+      if (e.who === me) { if (e.empty) toast('연못이 비었어요'); else if (e.lucky) bannerPop('fish', 'GO GO FISH!', `원하던 <b>${esc(cname(e.set))}</b>! 한 번 더!`); else bannerPop('fish', 'GO GO FISH!', `<b>${esc(cname(e.got) || '')}</b> 카드를 낚았어요`); } break;
+    case 'wrong': if (e.who === me) { play('incorrect', .6); bannerPop('no', '오답!', `정답 문장: <b>${esc(e.correct)}</b>`); speak(e.correct); } break;
+    case 'book': play('book', e.who === me ? .65 : .35); if (e.who === me) bookFx(e.set); else toast(`${esc(P(e.who).name)}: <b>${esc(cname(e.set))}</b> 책 완성!`); break;
   }
 }
 
@@ -638,7 +677,11 @@ function renderResult(v) {
   }).join('');
   const g = (R.gain && R.gain[v.me.pid]) || 0;
   $('#rmine').innerHTML = `<span class="star">⭐</span> 이번 판 <b>+${g}점</b> · 내 점수 <b>${v.me.stats.score}점</b> · 반 랭킹 <b class="big">${v.me.rank || '-'}등</b><small> / ${v.me.total}명</small>`;
-  if (R.winners.includes(v.me.pid)) tone([523, 659, 784, 1046, 1318], .15, 'square', .07);
+  if (resultSeen !== R.num + ':' + R.endsAt) {
+    resultSeen = R.num + ':' + R.endsAt;
+    play('end', .6); play('rank', .5, 1.1);
+    if (R.winners.includes(v.me.pid)) play('first', .6, 1.9);
+  }
   $('#rmsg').innerHTML = `<span data-left="${R.resultEnds}"></span>초 뒤 대기실로 가서 <b>새 모둠</b>을 만나요!`;
   tick();
 }
@@ -717,20 +760,43 @@ new MutationObserver(fitSoon).observe(document.body, { childList: true });
 fitSoon();
 
 // ───── 시계 ─────
+let warnKey = '';
 function tick() {
   document.querySelectorAll('[data-left]').forEach(el => el.textContent = secLeft(Number(el.dataset.left)));
   if (!V || !V.room) return;
   const R = V.room;
-  if (V.screen === 'intro') $('#icount').textContent = secLeft(R.introEnds);
-  if (V.screen === 'game') { const s = secLeft(R.endsAt); $('#gtime').textContent = mmss(s); $('#gtimebox').classList.toggle('warn', s <= 60); }
+  if (V.screen === 'intro') { const n = secLeft(R.introEnds); if ($('#icount').textContent !== String(n)) { $('#icount').textContent = n; if (n > 0 && n <= 5) play('tick', .5); } }
+  if (V.screen === 'game') {
+    const s = secLeft(R.endsAt); $('#gtime').textContent = mmss(s); $('#gtimebox').classList.toggle('warn', s <= 60);
+    const key = R.num + ':' + s;
+    if ((s === 60 || s === 30 || (s <= 5 && s >= 1)) && warnKey !== key) { warnKey = key; play('warning', s <= 5 ? .4 : .5); }
+    if (s === 0 && warnKey !== R.num + ':up') { warnKey = R.num + ':up'; play('timeup', .6); }
+  }
   for (const [bar, txt] of [['#saybar', '#saytime'], ['#repbar', '#reptime']]) {
     const el = $(bar); if (!el.dataset.ends) continue;
     const left = (Number(el.dataset.ends) - snow()) / 1000;
     el.style.width = Math.max(0, Math.min(100, left / Number(el.dataset.total) * 100)) + '%';
-    $(txt).textContent = mmss(Math.max(0, Math.ceil(left)));
+    const sec = Math.max(0, Math.ceil(left)); $(txt).textContent = mmss(sec);
+    const m = el.closest('.modal');
+    if (m && m.classList.contains('on') && sec >= 1 && sec <= 3 && el.dataset.beep !== el.dataset.ends + ':' + sec) { el.dataset.beep = el.dataset.ends + ':' + sec; play('tick', .45); }
   }
 }
 setInterval(tick, 250);
+
+// ───── 버튼·팝업 효과음 ─────
+document.addEventListener('click', e => {
+  const t = e.target.closest('button, .tab, .sub'); if (!t || t.disabled) return;
+  if (t.closest('.opt, .card, .seat, .xbtn, #rx, #sayx')) return; // 따로 소리를 내는 것
+  if (t.matches('#jgo, #reqgo, #rgo, .bookfx button')) play('confirm', .5);
+  else if (t.matches('#lout, #rhome, #saycancel')) play('back', .5);
+  else play('click', .45);
+}, true);
+['#mreq', '#msay', '#mreply', '#mhow', '#mset'].forEach(sel => {
+  const m = $(sel); let was = m.classList.contains('on');
+  new MutationObserver(() => { const on = m.classList.contains('on'); if (on === was) return; was = on;
+    if (on) play('open', .5); else if (!(SFX_LAST.confirm && performance.now() - SFX_LAST.confirm < 800)) play('close', .35); })
+    .observe(m, { attributes: true, attributeFilter: ['class'] });
+});
 document.addEventListener('visibilitychange', () => { if (!document.hidden && !socket.connected) socket.connect(); });
 </script>
 </body>
