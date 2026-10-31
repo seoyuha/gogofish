@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>GO GO FISH</title>
+<link rel="icon" href="/assets/v10/ui/card-back.png">
+<link rel="stylesheet" href="/fonts/pretendard/pretendard.css">
+<link rel="stylesheet" href="/fonts/jua/jua.css">
+<link rel="stylesheet" href="/fonts/fredoka/fredoka.css">
+<link rel="stylesheet" href="/assets/game-v10.css">
+<link rel="stylesheet" href="/assets/rankbar.css">
+</head>
+<body>
+
+<!-- ───── 시작 화면 ───── -->
+<section class="screen on" id="join">
+  <div class="joinwrap">
+    <h1 class="biglogo"><img src="/assets/v10/ui/logo.png" alt="GO GO FISH"></h1>
+    <div class="tagline">함께 배우고, 함께 완성하는 영어 카드 게임</div>
+    <div class="panel joinbox">
+      <label for="jcode">반 코드 <small>선생님이 알려 줘요</small></label>
+      <input id="jcode" maxlength="12" autocomplete="off" placeholder="예: 6-1">
+      <label for="jname">내 이름 <small>번호와 이름</small></label>
+      <input id="jname" maxlength="12" autocomplete="off" placeholder="예: 12 김민준">
+      <div class="err" id="jerr"></div>
+    </div>
+    <button class="pill yellow xl" id="jgo"><i class="play"></i>게임 시작하기</button>
+    <div class="subrow">
+      <button class="sub" onclick="openHow()"><img src="/assets/v10/ui/gl-book.png" alt="">게임 방법</button>
+      <button class="sub" onclick="openSet()"><img src="/assets/v10/ui/gl-gear.png" alt="">설정</button>
+    </div>
+  </div>
+</section>
+
+<!-- ───── 대기실 ───── -->
+<section class="screen" id="lobby">
+  <div class="lobwrap">
+    <button class="pill blue sm backbtn" id="lout"><img src="/assets/v10/ui/gl-back.png" alt="">나가기</button>
+    <h1 class="t3d" data-t="게임 대기실">게임 대기실</h1>
+    <div class="infobar">
+      <div class="ib-code"><small>반 코드</small><b id="lcode"></b></div>
+      <div class="ib-sep"></div>
+      <div class="ib-people"><img src="/assets/v10/ui/ic-people.png" alt=""><span><b id="lcount">0</b><small>명 기다리는 중</small></span></div>
+    </div>
+    <div class="ptiles" id="ltiles"></div>
+    <div class="pill blue xl static" id="lstatus"></div>
+    <div class="lsub" id="lsub"></div>
+    <div class="stats" id="lstats"></div>
+    <div class="panel ranktop" id="ltop"></div>
+    <div class="panel study">
+      <div class="phead"><img src="/assets/v10/ui/ic-book.png" alt=""><b>기다리는 동안 카드 공부</b><small>카드를 누르면 문장을 들려줘요</small></div>
+      <div class="tabs" id="stabs"></div>
+      <div class="sgrid" id="sgrid"></div>
+      <div class="studyline" id="sline">카드를 눌러 보세요!</div>
+    </div>
+  </div>
+</section>
+
+<!-- ───── 새 모둠 소개 ───── -->
+<section class="screen" id="intro">
+  <div class="introwrap">
+    <h1 class="t3d big" data-t="새 모둠이 만들어졌어요!"><span class="y">새 모둠이</span> 만들어졌어요!</h1>
+    <div class="ipill" id="inum"></div>
+    <div class="itiles" id="imem"></div>
+    <div class="countring"><b id="icount">5</b></div>
+    <div class="rulebox">
+      <div><img src="/assets/v10/ui/ic-book.png" alt="">같은 카드 4장을 모아 책을 만들어요.</div>
+      <div><img src="/assets/v10/ui/ic-speech.png" alt="">내 차례가 되면 친구에게 원하는 카드를 영어로 물어보세요.</div>
+      <div><img src="/assets/v10/ui/ic-trophy.png" alt="">가장 많은 책을 모으면 승리!</div>
+    </div>
+  </div>
+</section>
+
+<!-- ───── 게임 ───── -->
+<section class="screen" id="game">
+  <header class="ghud">
+    <img class="glogo" src="/assets/v10/ui/logo.png" alt="GO GO FISH">
+    <div class="hudbar">
+      <div class="hu"><span class="hk">모둠</span><b id="groom"></b></div>
+      <div class="hu" id="gtimebox"><img src="/assets/v10/ui/ic-clock.png" alt=""><span><span class="hk">남은 시간</span><b id="gtime">0:00</b></span></div>
+      <div class="hu"><img src="/assets/v10/ui/ic-cards.png" alt=""><span><span class="hk">연못 카드</span><b><span id="gdeck">0</span>장</b></span></div>
+      <div class="hu"><img src="/assets/v10/ui/ic-book.png" alt=""><span><span class="hk">완성된 책</span><b id="gbooks">0</b></span></div>
+    </div>
+    <button class="rb blue" id="snd" aria-label="소리"><img src="/assets/v10/ui/gl-sound.png" alt=""></button>
+    <button class="rb blue" onclick="openHow()" aria-label="게임 방법"><img src="/assets/v10/ui/gl-help.png" alt=""></button>
+  </header>
+  <div class="status" id="status"></div>
+  <div class="tablewrap" id="table">
+    <div class="tabletop"></div>
+    <div class="center" id="center">
+      <div class="pond"><img src="/assets/v10/ui/deck.png" alt="연못 카드 더미"><span class="pcnt" id="pdeck">0</span></div>
+      <div class="lastcard" id="lastcard"></div>
+    </div>
+    <div id="seats"></div>
+  </div>
+  <div class="chat" id="chat"><span class="chatlab"><img src="/assets/v10/ui/ic-speech.png" alt="">최근 대화</span><div class="story" id="story"></div></div>
+  <div class="bottom">
+    <div class="panel mine">
+      <div class="ptab"><span class="pw" id="myav"></span>내 카드 <small id="mycount"></small></div>
+      <div class="hand" id="hand"></div>
+    </div>
+    <div class="panel books">
+      <div class="ptab"><img src="/assets/v10/ui/ic-book.png" alt="">내 책 <small>(완성한 세트)</small></div><span class="myscore" id="myscore"></span>
+      <div class="mybooks" id="mybooks"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───── 결과 ───── -->
+<section class="screen" id="result">
+  <div class="reswrap">
+    <div class="rpanel">
+      <img class="rhdr" src="/assets/v10/ui/result-header.png" alt="게임 종료!">
+      <button class="rx" id="rx" aria-label="닫기"><img src="/assets/v10/ui/result-close.png" alt=""></button>
+      <div class="rbody">
+        <div class="rlist" id="rank"></div>
+        <div class="rbtns">
+          <button class="gb" id="rgo"><img src="/assets/v10/ui/gl-refresh.png" alt="">다시 하기</button>
+          <button class="gb" id="rhome"><img src="/assets/v10/ui/gl-home.png" alt="">처음으로</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel rmine" id="rmine"></div>
+    <div class="lsub" id="rmsg"></div>
+  </div>
+</section>
+
+<!-- ───── 카드 요청 ───── -->
+<div class="modal" id="mreq"><div class="mpanel">
+  <div class="mhead"><h2 id="reqtitle"></h2><button class="xbtn" id="reqx" aria-label="닫기"><img src="/assets/v10/ui/gl-close.png" alt=""></button></div>
+  <div class="mbody">
+    <div class="tabs" id="reqtabs"></div>
+    <div class="reqcards" id="reqcards"></div>
+    <button class="pill blue lg wide" id="reqgo">요청하기</button>
+  </div>
+</div></div>
+
+<!-- ───── 문장 고르기 ───── -->
+<div class="modal" id="msay"><div class="mpanel">
+  <div class="mhead spark"><h2>문장을 고르세요!</h2><button class="xbtn" id="sayx" aria-label="닫기"><img src="/assets/v10/ui/gl-close.png" alt=""></button></div>
+  <div class="mbody">
+    <p class="msub" id="saysub"></p>
+    <div class="showcard" id="saycard"></div>
+    <div class="opts" id="sayopts"></div>
+    <div class="timerrow"><img src="/assets/v10/ui/ic-clock.png" alt=""><div class="tbar"><i id="saybar"></i></div><b id="saytime">0:00</b><button class="pill gray sm" id="saycancel"><img src="/assets/v10/ui/gl-refresh.png" alt="">다시 고르기</button></div>
+  </div>
+</div></div>
+
+<!-- ───── 대답하기 ───── -->
+<div class="modal" id="mreply"><div class="mpanel">
+  <div class="mhead spark"><h2 id="reptitle">알맞게 대답하세요!</h2></div>
+  <div class="mbody">
+    <p class="msub" id="repsub"></p>
+    <div class="qbubble" id="repq"></div>
+    <div class="showcard small" id="repcard"></div>
+    <div class="opts" id="repopts"></div>
+    <div class="timerrow"><img src="/assets/v10/ui/ic-clock.png" alt=""><div class="tbar"><i id="repbar"></i></div><b id="reptime">0:00</b></div>
+  </div>
+</div></div>
+
+<!-- ───── 게임 방법 ───── -->
+<div class="modal" id="mhow" onclick="if(event.target===this)this.classList.remove('on')"><div class="mpanel">
+  <div class="mhead"><h2>게임 방법</h2><button class="xbtn" onclick="$('#mhow').classList.remove('on')" aria-label="닫기"><img src="/assets/v10/ui/gl-close.png" alt=""></button></div>
+  <div class="mbody howto">
+    <ol>
+      <li><b>3~5명</b>이 한 모둠! 같은 카드 <b>4장</b>을 모으면 <b>책 1권</b>. 책을 가장 많이 만든 사람이 1등이에요.</li>
+      <li>내 차례: <b>친구</b>를 누르고, 요청할 <b>내 카드</b>를 골라 <b>요청하기</b>를 눌러요.</li>
+      <li>알맞은 <b>영어 문장</b>을 골라 <b>큰 소리로</b> 물어봐요. 문장을 틀리면 친구에게 받을 수 없어요(연못에서 1장 가져가고 차례 끝).</li>
+      <li>친구가 그 카드를 가지고 있으면 → 카드를 <b>모두</b> 받고 <b>한 번 더!</b></li>
+      <li>없으면 → <b>Go fish!</b> 연못에서 1장 낚아요. 원하던 카드를 낚으면 한 번 더!</li>
+      <li>게임이 끝나면 대기실로 가서 <b>새 모둠</b>에 자동으로 들어가요.</li>
+    </ol>
+    <div class="ex"><b class="u11">11단원</b> Do you know about hanbok?<br><span>→ Yes, I do. Here you are. / No, I don't. Go fish!</span></div>
+    <div class="ex"><b class="u12">12단원</b> Don't forget to recycle. / We should save water.<br><span>→ Sure! Here you are. / Sorry. Go fish!</span></div>
+    <button class="pill yellow lg wide" onclick="$('#mhow').classList.remove('on')">확인</button>
+  </div>
+</div></div>
+
+<!-- ───── 설정 ───── -->
+<div class="modal" id="mset" onclick="if(event.target===this)this.classList.remove('on')"><div class="mpanel narrow">
+  <div class="mhead"><h2>설정</h2><button class="xbtn" onclick="$('#mset').classList.remove('on')" aria-label="닫기"><img src="/assets/v10/ui/gl-close.png" alt=""></button></div>
+  <div class="mbody">
+    <button class="setrow" id="setsound"><img src="/assets/v10/ui/gl-sound.png" alt=""><span>소리 · 영어 읽어 주기</span><i class="toggle" id="settog"></i></button>
+    <button class="pill yellow lg wide" onclick="$('#mset').classList.remove('on')">확인</button>
+  </div>
+</div></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS = {get(k,d){try{const v=localStorage.getItem('gogofish.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}}, set(k,v){try{localStorage.setItem('gogofish.'+k,JSON.stringify(v))}catch(e){}}};
+const UI = '/assets/v10/ui/';
+
+let CARDS = {}, IMAGES = {}, V = null, offset = 0, lastKey = '', lastSeq = 0, curRoom = null;
+let sel = { set: null, target: null }, sound = LS.get('sound', true), studyUnit = null, asking = false;
+let req = { open: false, target: null, set: null, tab: 'all' };
+
+fetch('/api/cards').then(r => r.json()).then(d => { CARDS = d.cards; IMAGES = d.images || {}; lastKey = ''; if (V) render(V); });
+
+// ───── 소리 ─────
+let AC = null;
+function tone(freqs, dur = .12, type = 'sine', vol = .12) {
+  if (!sound) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    let t = AC.currentTime;
+    for (const f of freqs) { const o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur); o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur); t += dur * .8; }
+  } catch (e) {}
+}
+const SFX = { turn: () => tone([660, 880]), give: () => tone([523, 659, 784]), fish: () => tone([300, 220], .18, 'triangle'), book: () => tone([523, 659, 784, 1046], .16, 'square', .08), bad: () => tone([220, 180], .2, 'sawtooth', .06), pop: () => tone([900], .06) };
+let voice = null;
+function pickVoice() { const vs = speechSynthesis.getVoices().filter(v => /^en(-|_)/i.test(v.lang)); voice = vs.find(v => /US/i.test(v.lang) && /Google|Samantha|Jenny|Aria|Natural/i.test(v.name)) || vs.find(v => /US/i.test(v.lang)) || vs[0] || null; }
+if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(text) {
+  if (!sound || !('speechSynthesis' in window) || !text) return;
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = .88; if (voice) u.voice = voice; speechSynthesis.speak(u); } catch (e) {}
+}
+function setSound(v) { sound = v; LS.set('sound', v); $('#snd').classList.toggle('muted', !v); $('#settog').classList.toggle('on', v); }
+$('#snd').onclick = () => setSound(!sound); $('#setsound').onclick = () => setSound(!sound); setSound(sound);
+
+// ───── 말(폰)과 카드 ─────
+const PAWN_OF = { '🐟': 'red', '🐠': 'blue', '🐡': 'yellow', '🐙': 'green', '🦀': 'purple' };
+const PAWN_ALL = ['red', 'blue', 'yellow', 'green', 'purple'];
+function pawnColor(avatar, name) {
+  if (PAWN_OF[avatar]) return PAWN_OF[avatar];
+  let h = 0; for (const ch of String(name || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return PAWN_ALL[h % 5];
+}
+const pawn = (avatar, name, cls = '', gray = false) => `<img class="pawn ${cls}" src="${UI}pawn-${gray ? 'gray' : pawnColor(avatar, name)}.png" alt="" draggable="false">`;
+const FACES = new Set('hanbok gat kimchi tteokbokki songpyeon gongginori tuho hanji fan mask yunnori norigae earth recycle reuse saveenergy savewater planttrees animals oceans bike bus trash'.split(' '));
+
+function cardHTML(id, o = {}) {
+  const c = CARDS[id]; if (!c) return '';
+  const src = FACES.has(id) ? `/assets/v10/cards/${id}.png` : (IMAGES[id] || '');
+  const long = c.en.length > 14;
+  return `<div class="card u${c.unit} ${o.tap ? 'tap' : ''} ${o.sel ? 'sel' : ''} ${o.n > 1 ? 'stack' : ''} ${o.cls || ''}" data-set="${id}" title="${esc(c.en)} · ${esc(c.ko)}">
+    ${src ? `<img class="cface" src="${src}" alt="${esc(c.en)} ${esc(c.ko)}" draggable="false">` : `<div class="cemoji">${c.emoji}</div>`}
+    ${!src ? `<span class="clab"><b>${esc(c.en)}</b><i>${esc(c.ko)}</i></span>` : `<span class="cko">${esc(c.ko)}</span>`}
+    ${o.n ? `<span class="cnt">×${o.n}</span>` : ''}</div>`;
+}
+function cname(id) { const c = CARDS[id]; return c ? c.en : id; }
+
+// ───── 연결 ─────
+const socket = io({ transports: ['websocket', 'polling'] });
+const params = new URLSearchParams(location.search);
+$('#jcode').value = params.get('code') || LS.get('code', '');
+$('#jname').value = LS.get('name', '');
+const tokKey = code => 'token:' + String(code).toUpperCase().replace(/\s+/g, '');
+
+function join(auto = false) {
+  const code = $('#jcode').value.trim(), name = $('#jname').value.trim();
+  if (!code) { $('#jerr').textContent = '반 코드를 입력해 주세요.'; return; }
+  if (!name && !auto) { $('#jerr').textContent = '이름을 입력해 주세요.'; return; }
+  socket.emit('join', { code, name, token: LS.get(tokKey(code), null) }, res => {
+    if (res.error) { $('#jerr').textContent = res.error; show('join'); return; }
+    LS.set('code', code); LS.set('name', res.name); LS.set('token:' + res.code, res.token);
+    $('#jerr').textContent = '';
+    try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+  });
+}
+$('#jgo').onclick = () => join();
+$('#jname').onkeydown = e => { if (e.key === 'Enter') join(); };
+socket.on('connect', () => { const code = LS.get('code', ''); if (code && LS.get(tokKey(code), null) && (V || !$('#join').classList.contains('on') || LS.get('name', ''))) join(true); });
+socket.on('kicked', msg => { toast(msg); V = null; show('join'); });
+function leave() { if (!confirm('게임에서 나갈까요?')) return; socket.emit('logout'); LS.set(tokKey(LS.get('code', '')), null); V = null; show('join'); }
+$('#lout').onclick = leave;
+$('#rhome').onclick = leave;
+$('#rgo').onclick = $('#rx').onclick = () => socket.emit('toLobby');
+socket.on('view', v => { offset = v.serverNow - Date.now(); V = v; render(v); });
+
+function show(id) {
+  const was = document.querySelector('.screen.on');
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+  if (id !== 'game') { closeModals(); if (was && was.id !== id) document.querySelectorAll('.toast,.bpop,.bookfx').forEach(e => e.remove()); }
+}
+function closeModals() { ['#msay', '#mreply', '#mreq'].forEach(m => $(m).classList.remove('on')); req.open = false; }
+function toast(t) { const d = document.createElement('div'); d.className = 'toast'; d.innerHTML = t; document.body.appendChild(d); setTimeout(() => d.remove(), 2700); }
+// 시안의 말풍선 칩(내 차례!, 정답!, 오답!, GO GO FISH!)
+function bannerPop(kind, text, sub = '') {
+  document.querySelectorAll('.bpop').forEach(e => e.remove());
+  const d = document.createElement('div'); d.className = 'bpop';
+  d.innerHTML = `<div class="chip ${kind}">${text}</div>${sub ? `<div class="bsub">${sub}</div>` : ''}`;
+  document.body.appendChild(d); setTimeout(() => d.remove(), 2300);
+}
+function openHow() { $('#mhow').classList.add('on'); }
+function openSet() { $('#mset').classList.add('on'); }
+const snow = () => Date.now() + offset;
+const secLeft = t => Math.max(0, Math.ceil((t - snow()) / 1000));
+const mmss = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+function render(v) {
+  const key = JSON.stringify({ ...v, serverNow: 0 });
+  if (key === lastKey) return; lastKey = key;
+  if (v.screen === 'lobby') renderLobby(v);
+  else if (v.screen === 'intro') renderIntro(v);
+  else if (v.screen === 'game') renderGame(v);
+  else if (v.screen === 'result') renderResult(v);
+}
+
+// ───── 대기실 ─────
+const LMSG = {
+  few: ['친구들을 기다리고 있어요', '3명이 모이면 바로 모둠이 만들어져요'],
+  gather: ['새 모둠을 만들고 있어요', '조금만 기다려요!'],
+  others: ['다른 모둠이 끝나면 새 모둠이 만들어져요', '기다리는 동안 아래 카드를 공부해 봐요'],
+  mixing: ['친구들을 골고루 섞고 있어요', '지난 모둠 친구가 3명 이상 모이지 않게! 다른 모둠이 끝나면 바로 배정돼요'],
+  paused: ['선생님이 잠시 배정을 멈췄어요', '조금만 기다려요'],
+};
+function statChips(s, me) {
+  const acc = s.asks ? Math.round(s.askOk / s.asks * 100) + '%' : '-';
+  return `<div class="stat star"><b>${s.score}</b><span>내 점수</span></div><div class="stat star"><b>${me && me.rank ? me.rank + '등' : '-'}</b><span>반 랭킹</span></div><div class="stat"><b>${s.games}</b><span>게임</span></div><div class="stat"><b>${s.wins}</b><span>1등</span></div><div class="stat"><b>${s.books}</b><span>모은 책</span></div><div class="stat"><b>${acc}</b><span>문장 정답률</span></div>`;
+}
+function renderLobby(v) {
+  show('lobby'); curRoom = null;
+  const L = v.lobby, m = LMSG[L.msg] || LMSG.few;
+  $('#lcode').textContent = v.code;
+  $('#lcount').textContent = L.names.length;
+  $('#ltiles').innerHTML = L.names.map((n, i) => `<div class="ptile ${n === v.me.name ? 'me' : ''}">
+    ${n === v.me.name ? `<img class="crown" src="${UI}crown.png" alt="">` : ''}${pawn('', n)}
+    <div class="pno">${n === v.me.name ? '나' : 'Player ' + (i + 1)}</div><div class="nm">${esc(n)}</div><div class="ready">준비완료</div></div>`).join('');
+  $('#lstatus').innerHTML = `<span class="dots">${m[0]}</span>`;
+  let sub = m[1];
+  if (L.small && L.prevNum) sub = '반 인원이 적어서 같은 친구들과 다시 만날 수 있어요';
+  $('#lsub').textContent = sub + (L.playing ? ` · 지금 게임 중인 모둠 ${L.playing}개` : '');
+  $('#lstats').innerHTML = statChips(v.me.stats, v.me);
+  renderTop(v, '#ltop');
+  renderStudy(v.unit);
+}
+function renderStudy(unit) {
+  const units = unit === '11' ? ['11'] : unit === '12' ? ['12'] : ['11', '12'];
+  if (!units.includes(studyUnit)) studyUnit = units[0];
+  $('#stabs').innerHTML = units.map(u => `<button class="tab ${u === studyUnit ? 'on' : ''}" data-u="${u}">${u}단원</button>`).join('');
+  $('#stabs').querySelectorAll('.tab').forEach(b => b.onclick = () => { studyUnit = b.dataset.u; renderStudy(unit); });
+  const ids = Object.keys(CARDS).filter(id => String(CARDS[id].unit) === studyUnit);
+  $('#sgrid').innerHTML = ids.map(id => cardHTML(id, { tap: true })).join('');
+  $('#sgrid').querySelectorAll('.card').forEach(el => el.onclick = () => {
+    const c = CARDS[el.dataset.set]; speak(c.ask); SFX.pop();
+    $('#sline').innerHTML = `<b class="en">${esc(c.ask)}</b><span>${esc(c.askKo)}</span><span class="ans">→ ${esc(c.yes)} / ${esc(c.no)}</span>`;
+  });
+}
+
+// ───── 새 모둠 ─────
+function renderIntro(v) {
+  show('intro');
+  const R = v.room;
+  if (curRoom !== R.num) { curRoom = R.num; lastSeq = 0; sel = { set: null, target: null }; tone([523, 659, 784, 1046], .12); }
+  const u = R.unit === '11' ? '11단원' : R.unit === '12' ? '12단원' : '11+12';
+  $('#inum').textContent = `${R.num}번 모둠 · ${u}`;
+  $('#imem').innerHTML = R.players.map((p, i) => `<div class="itile ${p.pid === v.me.pid ? 'me' : ''}" style="animation-delay:${i * .08}s">
+    ${p.pid === v.me.pid ? `<img class="crown" src="${UI}crown.png" alt="">` : ''}${pawn(p.avatar, p.name)}
+    <div class="nm">${esc(p.name)}</div>${p.fromPrev ? '<span class="tg">지난 모둠 친구</span>' : ''}</div>`).join('');
+}
+
+// ───── 게임 ─────
+function renderGame(v) {
+  show('game');
+  const R = v.room, me = v.me.pid;
+  if (curRoom !== R.num) { curRoom = R.num; lastSeq = 0; sel = { set: null, target: null }; req.open = false; }
+  const mine = R.players.find(p => p.pid === me);
+  $('#groom').textContent = `${R.num}번`;
+  $('#gdeck').textContent = R.deck; $('#pdeck').textContent = R.deck; $('#center').classList.toggle('empty', R.deck === 0);
+  $('#gbooks').textContent = `${R.players.reduce((s, p) => s + p.books.length, 0)} / ${R.totalSets}권`;
+  $('#myav').innerHTML = mine ? pawn(mine.avatar, mine.name) : '';
+  $('#mycount').textContent = `(${v.hand.reduce((k, h) => k + h.n, 0)}장)`;
+  $('#myscore').innerHTML = `⭐ <b>${v.me.stats.score}</b>점 · 반 ${v.me.rank || '-'}등`;
+  const myBooks = mine ? mine.books : [];
+  const slots = Math.max(4, myBooks.length + 1);
+  $('#mybooks').innerHTML = myBooks.map(s => `<div class="bk">${cardHTML(s)}<img class="bkcrown" src="${UI}crown.png" alt=""></div>`).join('') +
+    Array.from({ length: slots - myBooks.length }, () => `<div class="bk slot"><img src="${UI}gl-book.png" alt=""></div>`).join('');
+
+  const myTurn = R.turn === me && R.phase === 'ask';
+  const handSets = v.hand.map(h => h.set);
+  if (!myTurn) { sel = { set: null, target: null }; if (req.open) closeReq(); }
+  if (sel.set && !handSets.includes(sel.set)) sel.set = null;
+  const targets = R.players.filter(p => p.pid !== me && p.count > 0).map(p => p.pid);
+  if (sel.target && !targets.includes(sel.target)) sel.target = null;
+
+  renderTable(v, myTurn, targets);
+
+  // 내 카드
+  $('#hand').innerHTML = v.hand.length ? v.hand.map(h => cardHTML(h.set, { n: h.n, tap: myTurn, sel: sel.set === h.set })).join('') : '<div class="empty">손에 카드가 없어요. 차례가 오면 연못에서 1장 가져와요.</div>';
+  if (myTurn) $('#hand').querySelectorAll('.card').forEach(el => el.onclick = () => {
+    sel.set = el.dataset.set; SFX.pop();
+    if (targets.length === 1) openReq(targets[0]); else { lastKey = ''; render(V); }
+  });
+
+  // 안내 줄
+  const nameOf = pid => { const p = R.players.find(x => x.pid === pid); return p ? `${pawn(p.avatar, p.name, 'sm')}<b>${esc(p.pid === me ? '나' : p.name)}</b>` : ''; };
+  const st = $('#status'); let html = '', kind = 'wait';
+  const pd = R.pending || {};
+  if (myTurn) { kind = 'me'; html = `<span class="chip turn">내 차례!</span><span class="stx">${sel.set ? `<b>${esc(cname(sel.set))}</b> 카드를 물어볼 친구를 눌러요` : '카드를 요청할 친구를 눌러요'} · <span data-left="${R.phaseEnds}"></span>초</span>`; }
+  else if (R.phase === 'say' && pd.asker === me) { kind = 'me'; html = '<span class="chip req">요청 중...</span><span class="stx">알맞은 문장을 골라요!</span>'; }
+  else if (R.phase === 'reply' && pd.target === me) { kind = 'me'; html = '<span class="chip ans">대답하기</span><span class="stx">친구의 질문에 대답해요!</span>'; }
+  else if (R.phase === 'ask' || R.phase === 'say') html = `<span class="chip think">생각 중...</span><span class="stx">${nameOf(R.turn)}의 차례예요</span>`;
+  else if (R.phase === 'reply') html = `<span class="chip think">기다리는 중</span><span class="stx">${nameOf(pd.target)}의 대답을 기다려요</span>`;
+  else html = '<span class="chip think">잠깐!</span><span class="stx">다음 차례 준비 중</span>';
+  st.className = 'status ' + kind; st.innerHTML = html;
+
+  // 문장 고르기
+  if (v.say) {
+    req.open = false; $('#mreq').classList.remove('on');
+    const c = CARDS[v.say.set];
+    $('#saysub').innerHTML = `이 카드를 ${nameOf(v.say.target)}에게 물어볼 문장을 골라요.`;
+    $('#saycard').innerHTML = cardHTML(v.say.set) + `<span class="utag u${c.unit}">Unit ${c.unit}</span>`;
+    $('#sayopts').innerHTML = v.say.options.map((o, i) => `<button class="opt" data-i="${i}"><i class="radio"></i><span>${esc(o)}</span></button>`).join('');
+    $('#sayopts').querySelectorAll('.opt').forEach(b => b.onclick = () => {
+      if ($('#sayopts').dataset.busy) return; $('#sayopts').dataset.busy = 1;
+      b.classList.add('on'); SFX.pop();
+      setTimeout(() => { socket.emit('say', { idx: Number(b.dataset.i) }); $('#msay').classList.remove('on'); delete $('#sayopts').dataset.busy; asking = false; }, 260);
+    });
+    $('#saybar').dataset.ends = R.phaseEnds; $('#saybar').dataset.total = 40;
+    $('#msay').classList.add('on');
+  } else $('#msay').classList.remove('on');
+
+  // 대답하기
+  if (v.reply) {
+    const c = CARDS[v.reply.set];
+    $('#reptitle').innerHTML = '알맞게 대답하세요!';
+    $('#repsub').innerHTML = `${nameOf(v.reply.asker)}의 질문이에요. 아래 내 카드를 확인해요.`;
+    $('#repq').innerHTML = `<b>${esc(c.ask)}</b><small>${esc(c.askKo)}</small>`;
+    $('#repcard').innerHTML = cardHTML(v.reply.set) + `<span class="utag u${c.unit}">Unit ${c.unit}</span>`;
+    $('#repopts').innerHTML = v.reply.options.map((o, i) => `<button class="opt ${i === 0 ? 'yes' : 'no'}" data-i="${i}"><i class="radio"></i><span>${esc(o)}</span></button>`).join('');
+    $('#repopts').querySelectorAll('.opt').forEach(b => b.onclick = () => {
+      if ($('#repopts').dataset.busy) return; $('#repopts').dataset.busy = 1; b.classList.add('on');
+      setTimeout(() => { socket.emit('reply', { choice: Number(b.dataset.i) }); $('#mreply').classList.remove('on'); delete $('#repopts').dataset.busy; }, 220);
+    });
+    $('#repbar').dataset.ends = v.reply.ends; $('#repbar').dataset.total = 15;
+    $('#mreply').classList.add('on');
+    const el = $('#hand').querySelector(`.card[data-set="${v.reply.set}"]`); if (el) el.classList.add('flash');
+  } else $('#mreply').classList.remove('on');
+
+  if (req.open) renderReq();
+  renderStory(v);
+  tick();
+}
+
+// ───── 카드 요청 창 ─────
+function openReq(target) {
+  if (!V || !V.room) return;
+  const R = V.room;
+  if (!(R.turn === V.me.pid && R.phase === 'ask')) return;
+  req = { open: true, target, set: sel.set || (V.hand[0] && V.hand[0].set) || null, tab: 'all' };
+  sel.target = target; SFX.pop();
+  renderReq(); $('#mreq').classList.add('on');
+}
+function closeReq() { req.open = false; $('#mreq').classList.remove('on'); }
+function renderReq() {
+  const R = V.room, p = R.players.find(x => x.pid === req.target);
+  if (!p) return closeReq();
+  $('#reqtitle').innerHTML = `${pawn(p.avatar, p.name, 'sm')}${esc(p.name)}에게 카드를 요청하세요!`;
+  const units = [...new Set(V.hand.map(h => String(CARDS[h.set]?.unit)))].sort();
+  const tabs = [['all', '전체'], ...units.map(u => [u, u + '단원'])];
+  if (!tabs.some(t => t[0] === req.tab)) req.tab = 'all';
+  $('#reqtabs').innerHTML = tabs.map(([k, t]) => `<button class="tab ${k === req.tab ? 'on' : ''}" data-k="${k}">${t}</button>`).join('');
+  $('#reqtabs').querySelectorAll('.tab').forEach(b => b.onclick = () => { req.tab = b.dataset.k; renderReq(); });
+  const list = V.hand.filter(h => req.tab === 'all' || String(CARDS[h.set]?.unit) === req.tab);
+  $('#reqcards').innerHTML = list.map(h => cardHTML(h.set, { tap: true, n: h.n, sel: h.set === req.set })).join('');
+  $('#reqcards').querySelectorAll('.card').forEach(el => el.onclick = () => { req.set = el.dataset.set; sel.set = req.set; SFX.pop(); renderReq(); });
+  $('#reqgo').disabled = !req.set;
+}
+$('#reqx').onclick = () => { closeReq(); sel.target = null; };
+$('#reqgo').onclick = () => {
+  if (!req.set || !req.target || asking) return;
+  asking = true; sel.set = req.set; sel.target = req.target;
+  socket.emit('ask', { target: req.target, set: req.set }, res => { asking = false; if (res && res.error && res.error !== 'not-your-turn') toast('다시 골라 주세요'); });
+  closeReq();
+};
+$('#saycancel').onclick = $('#sayx').onclick = () => { socket.emit('cancel'); $('#msay').classList.remove('on'); setTimeout(() => sel.target && openReq(sel.target), 250); };
+
+// ───── 테이블 ─────
+// 나는 아래, 친구들은 시계 방향으로 둘러앉아요
+const SEAT_POS = {
+  1: [[50, 15]],
+  2: [[22, 24], [78, 24]],
+  3: [[17, 42], [50, 13], [83, 42]],
+  4: [[15, 62], [27, 16], [73, 16], [85, 62]],
+};
+const ME_POS = [50, 88];
+function seatPositions(R, me) {
+  const i0 = Math.max(0, R.players.findIndex(p => p.pid === me));
+  const others = [];
+  for (let k = 1; k < R.players.length; k++) others.push(R.players[(i0 + k) % R.players.length]);
+  const pos = SEAT_POS[others.length] || SEAT_POS[4];
+  const out = { [me]: ME_POS };
+  others.forEach((p, i) => { out[p.pid] = pos[i] || [50, 15]; });
+  return out;
+}
+function tilesHTML(n) {
+  const k = Math.min(n, 6);
+  return Array.from({ length: k }, () => '<i class="mb"></i>').join('') + (n > 6 ? `<em class="more">+${n - 6}</em>` : '');
+}
+function renderTable(v, myTurn, targets) {
+  const R = v.room, me = v.me.pid, pd = R.pending || {};
+  const pos = seatPositions(R, me);
+  const showTarget = (R.phase === 'reply' || R.phase === 'say' || R.phase === 'wait') && pd.target;
+  $('#seats').innerHTML = R.players.map(p => {
+    const [x, y] = pos[p.pid] || [50, 50];
+    const isMe = p.pid === me, turn = R.turn === p.pid && R.status === 'playing';
+    const pick = !isMe && myTurn && targets.includes(p.pid);
+    const cls = ['seat', isMe ? 'me' : '', turn ? 'turn' : '', pick ? 'pickable' : '', sel.target === p.pid && myTurn ? 'picked' : '',
+      p.connected ? '' : 'off', p.count === 0 ? 'empty' : '', showTarget && pd.target === p.pid && !turn ? 'target' : ''].join(' ');
+    return `<div class="${cls}" data-pid="${p.pid}" style="left:${x}%;top:${y}%">
+      ${turn ? `<img class="crown" src="${UI}crown.png" alt="">` : ''}
+      <div class="pp">${pawn(p.avatar, p.name, '', !p.connected)}</div>
+      <div class="pi"><div class="nm">${esc(isMe ? p.name + ' (나)' : p.name)}</div>
+        <div class="row">${turn ? `<span class="turnpill">${isMe ? '내 차례' : '차례'}</span>` : ''}<span class="tiles">${tilesHTML(p.count)}</span><span class="cc">${p.count}장</span></div></div>
+      <span class="bkc"><img src="${UI}ic-book.png" alt="">${p.books.length}</span>
+      ${pick ? '<span class="hint">눌러서 요청</span>' : ''}${showTarget && pd.target === p.pid && !turn ? '<span class="hint red">질문 받는 중</span>' : ''}</div>`;
+  }).join('');
+  $('#seats').querySelectorAll('.seat.pickable').forEach(el => el.onclick = () => openReq(el.dataset.pid));
+  $('#table').classList.toggle('myturn', R.turn === me && R.status === 'playing');
+  // 가운데: 지금 오가는 카드
+  let shown = pd.set || null;
+  if (!shown) for (let i = R.events.length - 1; i >= 0; i--) { const e = R.events[i]; if (e.t === 'turn') break; if (e.set) { shown = e.set; break; } }
+  $('#lastcard').innerHTML = shown ? cardHTML(shown) : '';
+  $('#lastcard').classList.toggle('on', !!shown);
+}
+function fly(from, to, n = 1) {
+  const el = id => id === 'center' ? $('#center .pond') : $(`#seats .seat[data-pid="${id}"] .tiles`);
+  const a = el(from), b = el(to);
+  if (!a || !b) return;
+  const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+  for (let i = 0; i < Math.min(n, 4); i++) {
+    const c = document.createElement('img'); c.src = UI + 'card-back.png'; c.className = 'fly';
+    c.style.left = (ra.left + ra.width / 2 - 18) + 'px'; c.style.top = (ra.top + ra.height / 2 - 24) + 'px';
+    document.body.appendChild(c);
+    setTimeout(() => {
+      c.style.transform = `translate(${rb.left + rb.width / 2 - ra.left - ra.width / 2}px,${rb.top + rb.height / 2 - ra.top - ra.height / 2}px) rotate(${360 + i * 20}deg) scale(.7)`;
+      setTimeout(() => { c.style.opacity = '0'; }, 550);
+      setTimeout(() => c.remove(), 900);
+    }, 30 + i * 120);
+  }
+}
+window.addEventListener('resize', () => { if (V && V.screen === 'game') { lastKey = ''; render(V); } });
+
+// ───── 최근 대화 ─────
+function renderStory(v) {
+  const R = v.room, me = v.me.pid;
+  const P = pid => R.players.find(p => p.pid === pid) || { avatar: '', name: '?' };
+  const nm = pid => pid === me ? '나' : esc(P(pid).name);
+  const said = R.events.filter(e => ['ask', 'reply', 'wrong'].includes(e.t)).slice(-4);
+  $('#story').innerHTML = said.map(e => {
+    const p = P(e.who);
+    let en = '', ko = '', cls = '';
+    if (e.t === 'ask') { en = e.text; ko = e.ko; }
+    else if (e.t === 'reply') { en = e.text; ko = e.ok || e.auto ? (e.text.startsWith('Yes') || e.text.startsWith('Sure') ? '응, 있어! 여기 있어.' : '아니, 없어. 연못에서 낚아!') : '대답을 바르게 고쳤어요'; cls = 'reply'; }
+    else { en = e.chosen; ko = '정답: ' + e.correct; cls = 'bad'; }
+    return `<div class="msg ${cls}">${pawn(p.avatar, p.name, 'sm')}<span class="who">${nm(e.who)}</span><div class="bub"><b>${esc(en)}</b><small>${esc(ko)}</small></div></div>`;
+  }).join('');
+  $('#chat').classList.toggle('empty', !said.length);
+  const st = $('#story'); st.scrollLeft = st.scrollWidth;
+  const maxSeq = R.events.length ? R.events[R.events.length - 1].seq : 0;
+  if (lastSeq === 0) { lastSeq = maxSeq; return; }
+  for (const e of R.events) if (e.seq > lastSeq) effect(e, v);
+  lastSeq = maxSeq;
+}
+function effect(e, v) {
+  const me = v.me.pid;
+  const R = v.room, P = pid => R.players.find(p => p.pid === pid) || { name: '?' };
+  switch (e.t) {
+    case 'turn': if (e.who === me) { SFX.turn(); bannerPop('turn', '내 차례!'); } break;
+    case 'ask': if (e.who === me) bannerPop('ok', '정답! +' + v.scoreRules.ask + '점', esc(e.text)); if (e.who === me || e.to === me) speak(e.text); else SFX.pop(); break;
+    case 'reply': if (e.to === me || e.who === me) setTimeout(() => speak(e.text), 200); if (e.who === me && !e.ok && !e.auto) { SFX.bad(); toast(`바른 대답은<br><b>${esc(e.text)}</b>`); } break;
+    case 'give': fly(e.who, e.to, e.n); if (e.to === me) { SFX.give(); bannerPop('give', '카드 받았어요!', `<b>${esc(cname(e.set))}</b> ${e.n}장 · 한 번 더!`); } else if (e.who === me) toast(`<b>${esc(cname(e.set))}</b> ${e.n}장을 줬어요`); break;
+    case 'fish': { const w = $('#center'); w.classList.remove('splash'); void w.offsetWidth; w.classList.add('splash'); if (!e.empty) fly('center', e.who, 1); }
+      if (e.who === me) { SFX.fish(); if (e.empty) toast('연못이 비었어요'); else if (e.lucky) bannerPop('fish', 'GO GO FISH!', `원하던 <b>${esc(cname(e.set))}</b>! 한 번 더!`); else bannerPop('fish', 'GO GO FISH!', `<b>${esc(cname(e.got) || '')}</b> 카드를 낚았어요`); } break;
+    case 'wrong': if (e.who === me) { SFX.bad(); bannerPop('no', '오답!', `정답 문장: <b>${esc(e.correct)}</b>`); speak(e.correct); } break;
+    case 'book': SFX.book(); if (e.who === me) bookFx(e.set); else toast(`${esc(P(e.who).name)}: <b>${esc(cname(e.set))}</b> 책 완성!`); break;
+  }
+}
+
+// ───── 책 완성! ─────
+function bookFx(set) {
+  document.querySelectorAll('.bookfx').forEach(e => e.remove());
+  const d = document.createElement('div'); d.className = 'bookfx';
+  d.innerHTML = `<div class="bfpanel"><div class="bft t3d" data-t="책 완성!">책 완성!</div><div class="rays"></div>
+    <div class="confetti">${Array.from({ length: 16 }, (_, i) => `<i style="--i:${i};left:${4 + Math.random() * 90}%;top:${6 + Math.random() * 62}%;background:hsl(${(i * 47) % 360},85%,60%)"></i>`).join('')}</div>
+    <div class="bfan">${[0, 1, 2, 3].map(i => `<div class="bfc" style="--i:${i}">${cardHTML(set)}</div>`).join('')}</div>
+    <div class="bfname">${esc(cname(set))} · 4장 모두 모았어요 · <b class="plus">+${(V && V.scoreRules ? V.scoreRules.book : 10)}점</b></div>
+    <button class="pill green lg wide">좋아요!</button></div>`;
+  document.body.appendChild(d);
+  const close = () => d.remove();
+  d.querySelector('button').onclick = close; setTimeout(close, 4200);
+}
+
+// ───── '우리반 랭킹' 막대 ─────
+const RBAR = {1:{ar:5.7554,n:[20.75,35.25,66.75,84.89]},2:{ar:6.1069,n:[20.62,28.24,66.75,82.44]},3:{ar:6.1069,n:[20.75,28.24,66.75,83.21]},4:{ar:6.1069,n:[21.0,27.48,66.88,82.44]},5:{ar:6.2016,n:[20.75,27.13,66.5,82.17]}};
+function rankBar(r, i) {
+  const me = r.me ? ' me' : '', off = r.connected === false ? ' off' : '';
+  const nameHTML = `${pawn('', r.name)}<b>${esc(r.name)}</b><em>${r.score}<small>점</small></em>`;
+  const delay = `animation-delay:${(i || 0) * .07}s`;
+  if (r.rank <= 5) {
+    const c = RBAR[r.rank], n = c.n;
+    const box = `top:${n[1]}%;height:${n[3] - n[1]}%`;
+    return `<div class="rbar${me}${off}" style="--ar:${c.ar};${delay}"><img class="bg" src="${UI}rank-row${r.rank}.png" alt="${r.rank}위">
+      <span class="nm" style="left:${n[0]}%;width:${n[2] - n[0]}%;${box}">${nameHTML}</span>
+      <span class="ct" style="left:78.6%;width:10%;${box}">${r.books}</span></div>`;
+  }
+  return `<div class="rbar rx${me}${off}" style="${delay}"><span class="badge">${r.rank}<small>위</small></span><span class="nm">${nameHTML}</span><span class="ct"><img src="${UI}ic-book.png" alt="">${r.books}<small>권</small></span></div>`;
+}
+
+// ───── 반 랭킹 TOP 5 ─────
+function renderTop(v, sel) {
+  const el = $(sel); if (!el) return;
+  if (!v.top || !v.top.length) { el.innerHTML = ''; el.style.display = 'none'; return; }
+  el.style.display = '';
+  const inTop = v.top.some(t => t.me);
+  const mine = !inTop && v.me.rank ? rankBar({ name: v.me.name, rank: v.me.rank, score: v.me.stats.score, books: v.me.stats.books, me: true }, 5) : '';
+  el.innerHTML = `<img class="rkt" src="${UI}rank-title.png" alt="우리반 랭킹">
+    <div class="rbars">${v.top.map(rankBar).join('')}${mine ? '<div class="rkdots">⋮</div>' + mine : ''}</div>
+    <div class="rkrule2">책 1권 +${v.scoreRules.book} · 바른 문장 +${v.scoreRules.ask} · 바른 대답 +${v.scoreRules.reply} · 모둠 1등 +${v.scoreRules.win} · 한 판 참여 +${v.scoreRules.play}</div>`;
+}
+
+// ───── 결과 ─────
+function renderResult(v) {
+  show('result');
+  const R = v.room;
+  const G = pid => (R.gain && R.gain[pid]) || 0;
+  const sorted = [...R.players].sort((a, b) => b.books.length - a.books.length || G(b.pid) - G(a.pid));
+  let rank = 0, prev = null;
+  $('#rank').innerHTML = sorted.map((p, i) => {
+    const key = p.books.length + '/' + G(p.pid);
+    if (key !== prev) { rank = i + 1; prev = key; }
+    const first = rank === 1;
+    const g = (R.gain && R.gain[p.pid]) || 0;
+    const badge = first ? `<span class="rcrown"><img src="${UI}crown.png" alt=""><b>1</b></span>` : `<span class="rnum n${Math.min(rank, 5)}">${rank}</span>`;
+    return `<div class="rrow c${Math.min(i + 1, 5)} ${first ? 'first' : ''} ${p.pid === v.me.pid ? 'me' : ''}" style="animation-delay:${i * .09}s">
+      ${first ? '<i class="spk s1">✦</i><i class="spk s2">✦</i><i class="spk s3">✦</i><i class="spk s4">✦</i>' : ''}
+      ${badge}<span class="rpw">${pawn(p.avatar, p.name)}</span>
+      <span class="rname">${esc(p.name)}${p.pid === v.me.pid ? '<small>나</small>' : ''}<em>+${g}점</em></span>
+      <b class="rbook">${p.books.length}권</b></div>`;
+  }).join('');
+  const g = (R.gain && R.gain[v.me.pid]) || 0;
+  $('#rmine').innerHTML = `<span class="star">⭐</span> 이번 판 <b>+${g}점</b> · 내 점수 <b>${v.me.stats.score}점</b> · 반 랭킹 <b class="big">${v.me.rank || '-'}등</b><small> / ${v.me.total}명</small>`;
+  if (R.winners.includes(v.me.pid)) tone([523, 659, 784, 1046, 1318], .15, 'square', .07);
+  $('#rmsg').innerHTML = `<span data-left="${R.resultEnds}"></span>초 뒤 대기실로 가서 <b>새 모둠</b>을 만나요!`;
+  tick();
+}
+
+// ───── 시계 ─────
+function tick() {
+  document.querySelectorAll('[data-left]').forEach(el => el.textContent = secLeft(Number(el.dataset.left)));
+  if (!V || !V.room) return;
+  const R = V.room;
+  if (V.screen === 'intro') $('#icount').textContent = secLeft(R.introEnds);
+  if (V.screen === 'game') { const s = secLeft(R.endsAt); $('#gtime').textContent = mmss(s); $('#gtimebox').classList.toggle('warn', s <= 60); }
+  for (const [bar, txt] of [['#saybar', '#saytime'], ['#repbar', '#reptime']]) {
+    const el = $(bar); if (!el.dataset.ends) continue;
+    const left = (Number(el.dataset.ends) - snow()) / 1000;
+    el.style.width = Math.max(0, Math.min(100, left / Number(el.dataset.total) * 100)) + '%';
+    $(txt).textContent = mmss(Math.max(0, Math.ceil(left)));
+  }
+}
+setInterval(tick, 250);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && !socket.connected) socket.connect(); });
+</script>
+</body>
+</html>

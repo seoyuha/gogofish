@@ -1,0 +1,10 @@
+GO GO FISH 11차: 카드 23종 교체 (새 카드 시트 2장 기준)
+
+- 보내 주신 카드 시트 2장에서 카드 23장을 한 장씩 오려 게임 카드로 사용 (왕관·종이비행기 포함, 바깥 빛 제거)
+- 카드에 적힌 낱말에 맞춰 게임 낱말과 문장을 바꿈
+  11단원: hanbok, gat, kimchi, tteokbokki, songpyeon, gongginori, tuho, hanji, fan, mask, yutnori, norigae
+    · Do you know about ~?  (fan·mask는 the Korean fan / the Korean mask)
+  12단원: We should save the Earth / save energy / save water / plant trees / protect animals / clean the oceans
+          Don't forget to recycle / reuse / use a bike / use public transportation / reduce trash
+- 카드 아래에 우리말 뜻(한복, 떡볶이, 나무 심기 …)을 작은 꼬리표로 표시
+- 이전 카드 그림은 design-history/v10-cards/에 보관

@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GO GO FISH · 교사 관리</title>
+<link rel="icon" href="/assets/v10/ui/card-back.png">
+<link rel="stylesheet" href="/fonts/pretendard/pretendard.css">
+<link rel="stylesheet" href="/fonts/jua/jua.css">
+<link rel="stylesheet" href="/assets/teacher-v10.css">
+<link rel="stylesheet" href="/assets/rankbar.css">
+<script src="/lib/qrcode.js"></script>
+</head>
+<body>
+<div id="gate" class="gate">
+  <img class="gatelogo" src="/assets/v10/ui/logo.png" alt="GO GO FISH">
+  <div class="box gatebox">
+    <h2>교사 관리 시작</h2>
+    <p>반 코드를 정해서 학생들에게 알려 주세요.</p>
+    <input id="gcode" maxlength="12" placeholder="예: 6-1" autocomplete="off">
+    <button class="pill blue wide" id="ggo">관리 시작</button>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+<header>
+  <img class="hlogo" src="/assets/v10/ui/logo.png" alt="GO GO FISH">
+  <span class="hpill"><img src="/assets/v10/ui/gl-gear.png" alt="">교사 관리</span>
+  <div class="hbtns">
+    <button class="hb" id="bbots"><img src="/assets/v10/ui/ic-people.png" alt="">연습봇 3명 넣기</button>
+    <button class="hb" id="bnobots"><img src="/assets/v10/ui/ic-people.png" alt="" class="dim">봇 모두 빼기</button>
+    <button class="hb" id="bcsv"><i class="xls">X</i>결과 엑셀(CSV)</button>
+    <button class="hb red" id="bendall"><i class="power"></i>수업 끝내기</button>
+  </div>
+</header>
+<main>
+  <aside>
+    <section class="box">
+      <h3><img src="/assets/v10/ui/ic-people.png" alt="">우리 반 접속 코드</h3>
+      <div class="codebox"><b id="tcode"></b><button class="copy" id="ccode" aria-label="반 코드 복사"><i></i></button></div>
+      <div id="qr" class="qr"></div>
+      <div class="urlbox"><span id="turl"></span><button class="copy" id="curl" aria-label="주소 복사"><i></i></button></div>
+      <button class="pill blue wide" id="clink">🔗 링크 복사</button>
+    </section>
+    <section class="box">
+      <h3><img src="/assets/v10/ui/gl-gear.png" alt="" class="wh">수업 설정</h3>
+      <div class="setlab">카드 단원 <small>(문제 범위)</small></div>
+      <div class="seg" id="sunit"><button data-v="11">11단원 <small>전통문화</small></button><button data-v="12">12단원 <small>환경 보호</small></button></div>
+      <div class="unitnote" id="unitnote"></div>
+      <div class="setlab">게임 시간</div>
+      <div class="seg" id="smin"><button data-v="3">3분</button><button data-v="5">5분</button><button data-v="7">7분</button><button data-v="10">10분</button><button data-v="15">15분</button></div>
+      <div class="autorow" id="sauto"><div><b>자동 모둠 매칭</b><small>대기실에 3명 이상 모이면 3~5명 모둠을 만들어 바로 시작해요. 지난 모둠 친구는 새 모둠에 2명까지만 함께해요.</small></div><i class="toggle"></i></div>
+    </section>
+  </aside>
+
+  <div class="maincol">
+    <div class="kpis">
+      <div class="kpi"><img src="/assets/v10/ui/ic-people.png" alt=""><div><span>접속 학생</span><b><span id="k1">0</span>명</b><small id="k1s"></small><i class="bar"><i id="k1b"></i></i></div></div>
+      <div class="kpi"><img src="/assets/v10/ui/pawn-green.png" alt="" class="pw2"><div><span>게임 중인 모둠</span><b><span id="k2">0</span>개</b></div></div>
+      <div class="kpi"><img src="/assets/v10/ui/ic-clock.png" alt=""><div><span>대기실</span><b><span id="k3">0</span>명</b></div></div>
+      <div class="kpi"><img src="/assets/v10/ui/ic-book.png" alt=""><div><span>끝난 게임</span><b><span id="k4">0</span>개</b></div></div>
+    </div>
+
+    <section class="box rankbox">
+      <h3><img src="/assets/v10/ui/ic-trophy.png" alt="">반 전체 랭킹 <small class="cnt" id="rkcnt"></small>
+        <span class="rkbtns"><button class="mini" id="bbig">📺 크게 보기</button><button class="mini red" id="breset">초기화</button></span></h3>
+      <div class="rkwrap2"><div class="rbars" id="podium"></div><div class="rbars rest" id="rklist"></div></div>
+      <div class="rkrule" id="rkrule"></div>
+    </section>
+
+    <section class="box">
+      <h3><img src="/assets/v10/ui/ic-people.png" alt="" class="wh">대기실 <small class="cnt" id="wcnt"></small><span class="note" id="lmsg"></span></h3>
+      <div class="wtiles" id="wait"></div>
+    </section>
+
+    <section class="box">
+      <h3><img src="/assets/v10/ui/ic-cards.png" alt="" class="wh">게임 중인 모둠 <small class="cnt" id="rcnt"></small><span class="note">진행 중인 게임의 실시간 현황입니다.</span></h3>
+      <div class="rooms" id="rooms"></div>
+    </section>
+
+    <div class="twocol">
+      <section class="box">
+        <h3><img src="/assets/v10/ui/ic-people.png" alt="" class="wh">학생별 접속 현황 <small class="cnt" id="scnt"></small></h3>
+        <div class="tw"><table><thead><tr><th>번호</th><th>이름</th><th>접속 상태</th><th>현재 모둠</th><th>남은 카드</th><th>완성한 책</th><th>게임</th><th>1등</th><th>문장 정답률</th><th>대답 정답률</th><th></th></tr></thead><tbody id="stu"></tbody></table></div>
+      </section>
+      <section class="box">
+        <h3><img src="/assets/v10/ui/ic-book.png" alt="" class="wh">완료된 게임 기록 <small class="cnt" id="hcnt"></small></h3>
+        <div class="tw"><table class="hist"><thead><tr><th>순번</th><th>종료 시간</th><th>모둠 구성</th><th>완성한 책</th><th>게임 시간</th><th>우승</th></tr></thead><tbody id="hist"></tbody></table></div>
+      </section>
+    </div>
+  </div>
+</main>
+</div>
+
+<div id="bigrank" class="bigrank"><div class="bigin">
+  <button class="bigx2" id="bigx" aria-label="닫기"><img src="/assets/v10/ui/result-close.png" alt=""></button>
+  <img class="rkt" src="/assets/v10/ui/rank-title.png" alt="우리반 랭킹">
+  <div class="bigcols"><div class="rbars" id="bpodium"></div><div class="rbars rest" id="blist"></div></div>
+</div></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const UI = '/assets/v10/ui/';
+const socket = io();
+let V = null, offset = 0, code = new URLSearchParams(location.search).get('code') || localStorage.getItem('gogofish.tcode') || '';
+$('#gcode').value = code;
+const PAWN_OF = { '🐟': 'red', '🐠': 'blue', '🐡': 'yellow', '🐙': 'green', '🦀': 'purple' };
+const PAWN_ALL = ['red', 'blue', 'yellow', 'green', 'purple'];
+function pawnColor(avatar, name) { if (PAWN_OF[avatar]) return PAWN_OF[avatar]; let h = 0; for (const ch of String(name || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return PAWN_ALL[h % 5]; }
+const pawn = (avatar, name, cls = '', gray = false) => `<img class="pawn ${cls}" src="${UI}pawn-${gray ? 'gray' : pawnColor(avatar, name)}.png" alt="">`;
+
+// ───── '우리반 랭킹' 막대 ─────
+const RBAR = {1:{ar:5.7554,n:[20.75,35.25,66.75,84.89]},2:{ar:6.1069,n:[20.62,28.24,66.75,82.44]},3:{ar:6.1069,n:[20.75,28.24,66.75,83.21]},4:{ar:6.1069,n:[21.0,27.48,66.88,82.44]},5:{ar:6.2016,n:[20.75,27.13,66.5,82.17]}};
+function rankBar(r, i) {
+  const me = r.me ? ' me' : '', off = r.connected === false ? ' off' : '';
+  const nameHTML = `${pawn('', r.name)}<b>${esc(r.name)}</b><em>${r.score}<small>점</small></em>`;
+  const delay = `animation-delay:${(i || 0) * .07}s`;
+  if (r.rank <= 5) {
+    const c = RBAR[r.rank], n = c.n;
+    const box = `top:${n[1]}%;height:${n[3] - n[1]}%`;
+    return `<div class="rbar${me}${off}" style="--ar:${c.ar};${delay}"><img class="bg" src="${UI}rank-row${r.rank}.png" alt="${r.rank}위">
+      <span class="nm" style="left:${n[0]}%;width:${n[2] - n[0]}%;${box}">${nameHTML}</span>
+      <span class="ct" style="left:78.6%;width:10%;${box}">${r.books}</span></div>`;
+  }
+  return `<div class="rbar rx${me}${off}" style="${delay}"><span class="badge">${r.rank}<small>위</small></span><span class="nm">${nameHTML}</span><span class="ct"><img src="${UI}ic-book.png" alt="">${r.books}<small>권</small></span></div>`;
+}
+
+function copy(text, msg) {
+  const done = () => toast(msg || '복사했어요');
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, () => fallback());
+  else fallback();
+  function fallback() { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch (e) {} t.remove(); }
+}
+function toast(t) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 2000); }
+
+function start() {
+  const c = $('#gcode').value.trim(); if (!c) return;
+  socket.emit('tjoin', { code: c }, res => {
+    if (res.error) return alert(res.error);
+    code = res.code; localStorage.setItem('gogofish.tcode', code);
+    $('#gate').style.display = 'none'; $('#app').style.display = 'block';
+    $('#tcode').textContent = code;
+    const url = location.origin + '/?code=' + encodeURIComponent(code);
+    $('#turl').textContent = url;
+    try { const q = qrcode(0, 'M'); q.addData(url); q.make(); $('#qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }); }
+    catch (e) { $('#qr').innerHTML = '<small>QR을 만들지 못했어요. 아래 주소를 알려 주세요.</small>'; }
+    history.replaceState(null, '', '/teacher?code=' + encodeURIComponent(code));
+  });
+}
+$('#ggo').onclick = start;
+$('#gcode').onkeydown = e => { if (e.key === 'Enter') start(); };
+socket.on('connect', () => { if ($('#app').style.display === 'block' || new URLSearchParams(location.search).get('code')) start(); });
+$('#ccode').onclick = () => copy(code, '반 코드를 복사했어요');
+$('#curl').onclick = $('#clink').onclick = () => copy($('#turl').textContent, '학생 입장 링크를 복사했어요');
+
+document.querySelectorAll('#sunit button').forEach(b => b.onclick = () => socket.emit('tset', { unit: b.dataset.v }));
+document.querySelectorAll('#smin button').forEach(b => b.onclick = () => socket.emit('tset', { minutes: Number(b.dataset.v) }));
+$('#sauto').onclick = () => V && socket.emit('tset', { auto: !V.settings.auto });
+$('#bbots').onclick = () => socket.emit('tbots', { n: 3 });
+$('#bnobots').onclick = () => socket.emit('tremoveBots');
+$('#bbig').onclick = () => { $('#bpodium').__h = $('#blist').__h = null; $('#bigrank').classList.add('on'); try { $('#bigrank').requestFullscreen && $('#bigrank').requestFullscreen(); } catch (e) {} if (V) render(); };
+$('#bigx').onclick = () => { $('#bigrank').classList.remove('on'); try { document.fullscreenElement && document.exitFullscreen(); } catch (e) {} };
+$('#breset').onclick = () => { if (confirm('반 랭킹 점수와 기록을 모두 0으로 되돌릴까요?\n(다른 반 수업을 시작할 때 쓰세요)')) socket.emit('tresetScores'); };
+$('#bendall').onclick = () => { if (confirm('진행 중인 게임을 모두 끝내고 자동 배정을 멈출까요?')) socket.emit('tendAll'); };
+$('#bcsv').onclick = () => {
+  if (!V) return;
+  const rows = [['반 등수', '이름', '점수', '게임 수', '1등', '모은 책', '문장 시도', '문장 정답', '문장 정답률(%)', '대답 수', '대답 정답', '대답 정답률(%)']];
+  const RK = Object.fromEntries((V.ranking || []).map(r => [r.pid, r.rank]));
+  for (const s of [...V.students].filter(s => !s.bot).sort((a, b) => (RK[a.pid] || 999) - (RK[b.pid] || 999))) rows.push([RK[s.pid] || '', s.name, s.score, s.games, s.wins, s.books, s.asks, s.askOk, s.asks ? Math.round(s.askOk / s.asks * 100) : '', s.replies, s.replyOk, s.replies ? Math.round(s.replyOk / s.replies * 100) : '']);
+  const csv = '﻿' + rows.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = `GOGOFISH_${code}_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+};
+
+const LMSG = { few: '3명이 모이면 모둠이 만들어져요', gather: '모둠을 만들고 있어요…', others: '다른 모둠이 끝나면 새로 배정해요', mixing: '지난 모둠이 겹치지 않게 섞는 중이에요', paused: '⏸ 자동 매칭이 꺼져 있어요' };
+const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '-';
+const snow = () => Date.now() + offset;
+const mmss = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
+const U = { '11': '11단원', '12': '12단원' };
+
+socket.on('tview', v => { offset = v.serverNow - Date.now(); V = v; render(); });
+setInterval(() => { if (V) document.querySelectorAll('[data-ends]').forEach(el => el.textContent = mmss(Number(el.dataset.ends) - snow())); }, 500);
+
+function render() {
+  const v = V;
+  document.querySelectorAll('#sunit button').forEach(b => b.classList.toggle('on', b.dataset.v === v.settings.unit));
+  document.querySelectorAll('#smin button').forEach(b => b.classList.toggle('on', Number(b.dataset.v) === v.settings.minutes));
+  $('#sauto').classList.toggle('on', v.settings.auto);
+  $('#unitnote').textContent = v.settings.unit === '12' ? '지금은 12단원 카드만 나와요. 바꾸면 다음 모둠부터 적용돼요.' : '지금은 11단원 카드만 나와요. 바꾸면 다음 모둠부터 적용돼요.';
+  const online = v.students.filter(s => s.connected), all = v.students.filter(s => !s.bot);
+  const live = v.rooms.filter(r => r.status !== 'done');
+  $('#k1').textContent = online.length; $('#k1s').textContent = `/ ${v.students.length}명`;
+  $('#k1b').style.width = (v.students.length ? online.length / v.students.length * 100 : 0) + '%';
+  $('#k2').textContent = live.length;
+  $('#k3').textContent = v.waiting.filter(w => w.connected).length;
+  $('#k4').textContent = v.history.length;
+
+  // 반 랭킹
+  const rk = v.ranking || [];
+  $('#rkcnt').textContent = `(${rk.length}명)`;
+  const sr = v.scoreRules || {};
+  $('#rkrule').innerHTML = `점수: 책 1권 <b>+${sr.book}</b> · 바른 문장 <b>+${sr.ask}</b> · 바른 대답 <b>+${sr.reply}</b> · 모둠 1등 <b>+${sr.win}</b> · 한 판 참여 <b>+${sr.play}</b> &nbsp;|&nbsp; 같은 점수면 책 수 → 1등 횟수 순`;
+  const top5 = rk.filter(r => r.rank <= 5);
+  const setH = (sel, h) => { const el = $(sel); if (el.__h !== h) { el.__h = h; el.innerHTML = h; } };
+  setH('#podium', rk.length ? top5.map(rankBar).join('') : '<div class="empty">아직 점수가 없어요</div>');
+  setH('#rklist', rk.filter(r => r.rank > 5).map(rankBar).join('') || (rk.length ? '<div class="empty">6위부터 여기에 나와요</div>' : ''));
+  if ($('#bigrank').classList.contains('on')) {
+    setH('#bpodium', top5.map(rankBar).join(''));
+    setH('#blist', rk.filter(r => r.rank > 5).slice(0, 25).map(rankBar).join(''));
+    $('#bigrank').classList.toggle('few', rk.filter(r => r.rank > 5).length === 0);
+  }
+
+  // 대기실
+  $('#wcnt').textContent = `(${v.waiting.length}명)`;
+  $('#lmsg').textContent = LMSG[v.lobbyMsg] || '';
+  $('#wait').innerHTML = v.waiting.length ? v.waiting.map(w => `<div class="wtile ${w.connected ? '' : 'off'}">${pawn('', w.name, '', !w.connected)}<div><b>${esc(w.name)}</b><span class="chip">${w.connected ? '대기 중' : '접속 끊김'}</span>${w.prev ? `<span class="chip blue">전 ${w.prev}번</span>` : ''}<small>${w.wait}초</small></div></div>`).join('') : '<div class="empty">대기 중인 학생이 없어요</div>';
+
+  // 모둠
+  $('#rcnt').textContent = `(${live.length}개)`;
+  $('#rooms').innerHTML = v.rooms.length ? v.rooms.map((r, ri) => {
+    const books = r.players.reduce((s, p) => s + p.books, 0), tot = Number(r.totalSets) || 0;
+    const st = r.status === 'playing' ? ['play', '진행 중'] : r.status === 'intro' ? ['ready', '시작 준비'] : ['done', '끝'];
+    return `<div class="room ${st[0]} c${ri % 2}">
+      <div class="rhd"><i class="dot"></i><b>모둠 ${r.num}</b><span class="sep">|</span><span class="state ${st[0]}">● ${st[1]}</span><span class="unit">${U[r.unit] || ''}</span>
+        <span class="time">${r.status === 'playing' ? `<img src="${UI}ic-clock.png" alt="">남은 시간 <b data-ends="${r.endsAt}">${mmss(r.endsAt - snow())}</b>` : ''}</span></div>
+      <div class="rpl">${r.players.map(p => `<div class="rp ${r.turn === p.pid ? 'turn' : ''} ${p.connected ? '' : 'off'}">${r.turn === p.pid ? `<img class="crown" src="${UI}crown.png" alt="">` : ''}${pawn(p.avatar, p.name, '', !p.connected)}<div><b>${esc(p.name)}</b><small>남은 카드</small><em>${p.count}장</em>${p.prev ? `<span class="prev">전 ${p.prev}번</span>` : ''}</div></div>`).join('')}</div>
+      <div class="rft"><img src="${UI}ic-book.png" alt=""><span>완성한 책</span><b>${books}권 / ${tot || '-'}권</b><i class="bar"><i style="width:${tot ? books / tot * 100 : 0}%"></i></i>
+        <span class="deck"><img src="${UI}ic-cards.png" alt="">연못 ${r.deck}장</span>${r.status !== 'done' ? `<button class="pill red sm" data-end="${r.id}">끝내기</button>` : ''}</div></div>`;
+  }).join('') : '<div class="empty">아직 만들어진 모둠이 없어요. 학생이 3명 이상 들어오면 자동으로 만들어져요.</div>';
+  $('#rooms').querySelectorAll('[data-end]').forEach(b => b.onclick = () => { if (confirm('이 모둠 게임을 지금 끝낼까요?')) socket.emit('tend', { id: b.dataset.end }); });
+
+  // 학생별
+  const where = {};
+  for (const r of v.rooms) for (const p of r.players) where[p.pid] = { num: r.num, count: p.count };
+  const studs = [...v.students].sort((a, b) => (b.connected - a.connected) || a.name.localeCompare(b.name, 'ko', { numeric: true }));
+  $('#scnt').textContent = `(${online.length}명 / ${v.students.length}명)`;
+  const STATE = s => !s.connected ? ['off', '미접속'] : s.state === 'waiting' ? ['wait', '대기 중'] : s.state === 'result' ? ['res', '결과 보는 중'] : ['play', '게임 중'];
+  $('#stu').innerHTML = studs.length ? studs.map((s, i) => {
+    const w = where[s.pid], [k, t] = STATE(s);
+    return `<tr><td class="n">${i + 1}</td><td class="nm">${esc(s.name)}</td><td><span class="st ${k}">● ${t}</span></td>
+      <td>${w ? `<span class="rchip">모둠 ${w.num}</span>` : s.connected ? '<span class="rchip gray">대기실</span>' : '-'}</td>
+      <td class="n">${w ? w.count + '장' : '-'}</td><td class="n">${s.books}권</td><td class="n">${s.games}</td><td class="n">${s.wins}</td><td class="n">${pct(s.askOk, s.asks)}</td><td class="n">${pct(s.replyOk, s.replies)}</td>
+      <td><button class="kick" data-kick="${s.pid}">내보내기</button></td></tr>`;
+  }).join('') : '<tr><td colspan="11" class="empty">아직 들어온 학생이 없어요</td></tr>';
+  $('#stu').querySelectorAll('[data-kick]').forEach(b => b.onclick = () => { if (confirm('이 학생을 내보낼까요? (다시 들어올 수 있어요)')) socket.emit('tkick', { pid: b.dataset.kick }); });
+
+  // 기록
+  $('#hcnt').textContent = `(${v.history.length}개)`;
+  $('#hist').innerHTML = v.history.length ? v.history.map((h, i) => {
+    const win = h.players.filter(p => p.win);
+    const dur = h.dur ? `${Math.floor(h.dur / 60000)}분 ${String(Math.round(h.dur / 1000) % 60).padStart(2, '0')}초` : '-';
+    return `<tr><td class="n">${v.history.length - i}</td><td class="n">${new Date(h.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}</td>
+      <td><span class="pawns">${h.players.map(p => `<span title="${esc(p.name)} ${p.books}권">${pawn(p.avatar, p.name, 'xs')}</span>`).join('')}</span></td>
+      <td class="n">${h.players.reduce((s, p) => s + p.books, 0)}권</td><td class="n">${dur}</td>
+      <td>${win.length ? `<span class="winner"><img src="${UI}crown.png" alt="">${win.map(p => esc(p.name)).join(', ')}</span>` : '-'}</td></tr>`;
+  }).join('') : '<tr><td colspan="6" class="empty">아직 끝난 게임이 없어요</td></tr>';
+}
+</script>
+</body>
+</html>
